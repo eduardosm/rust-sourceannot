@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check-msrv:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check MSRV in Cargo.toml
+        run: ./ci/check-msrv.sh
+
+  rustfmt:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        run: ./ci/install-rust.sh stable.txt --profile minimal -c rustfmt
+      - name: Run rustfmt
+        run: cargo fmt --all -- --check
+
+  clippy:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        run: ./ci/install-rust.sh stable.txt --profile minimal -c clippy
+      - name: Run clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+  build-and-test:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        include:
+          - rust-version: msrv.txt
+          - rust-version: stable.txt
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        run: ./ci/install-rust.sh "${{ matrix.rust-version }}" --profile minimal
+      - name: Build and test
+        run: ./ci/build-and-test.sh
