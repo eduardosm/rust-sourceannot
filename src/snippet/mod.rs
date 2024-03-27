@@ -18,9 +18,22 @@ pub(crate) struct SourceLine {
     width: usize,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 struct SourceUnitMeta {
     inner: u16,
+}
+
+impl std::fmt::Debug for SourceUnitMeta {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.is_extra() {
+            f.write_str("SourceUnitMeta::extra()")
+        } else {
+            f.debug_struct("SourceUnitMeta")
+                .field("width", &self.width())
+                .field("utf8_len", &self.utf8_len())
+                .finish()
+        }
+    }
 }
 
 impl SourceUnitMeta {
