@@ -5,12 +5,14 @@ on:
   pull_request:
 
 jobs:
-  check-msrv:
+  lint-aux:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v4
-      - name: Check MSRV in Cargo.toml
-        run: ./ci/check-msrv.sh
+      - name: Install dependencies
+        run: ./ci/install-lint-deps.sh
+      - name: Run auxilary lints
+        run: ./ci/lint-aux.sh
 
   rustfmt:
     runs-on: ubuntu-20.04
