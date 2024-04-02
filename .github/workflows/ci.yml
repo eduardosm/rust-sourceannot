@@ -5,6 +5,22 @@ on:
   pull_request:
 
 jobs:
+  report:
+    needs:
+      - lint-aux
+      - rustfmt
+      - clippy
+      - build-and-test
+    if: always()
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Report success
+        if: "!contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')"
+        run: exit 0
+      - name: Report failure
+        if: "contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')"
+        run: exit 1
+
   lint-aux:
     runs-on: ubuntu-20.04
     steps:
