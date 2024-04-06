@@ -3,6 +3,8 @@ set -euo pipefail
 
 export RUSTDOCFLAGS="-D warnings"
 
-cargo build --all-targets --locked
-cargo test --locked
-cargo doc --locked
+cargo fetch --locked
+
+cargo build --all-targets --frozen
+cargo test --frozen
+cargo doc --frozen
