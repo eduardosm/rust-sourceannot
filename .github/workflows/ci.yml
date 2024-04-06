@@ -46,7 +46,7 @@ jobs:
       - name: Install Rust
         run: ./ci/install-rust.sh stable.txt --profile minimal -c clippy
       - name: Run clippy
-        run: cargo clippy --all-targets --locked -- -D warnings
+        run: ./ci/clippy.sh
 
   build-and-test:
     runs-on: ubuntu-20.04
