@@ -8,6 +8,7 @@ description = "A library to render snippets of source code with annotations"
 repository = "https://github.com/eduardosm/rust-sourceannot"
 license = "MIT OR Apache-2.0"
 keywords = ["annotation", "code", "error", "report"]
+exclude = ["/.github", ".gitignore", "/ci"]
 publish = true
 
 [dependencies]
