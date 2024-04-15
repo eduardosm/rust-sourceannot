@@ -11,6 +11,7 @@ jobs:
       - rustfmt
       - clippy
       - build-and-test
+      - package-crate
     # 'always()' is needed because GitHub treats a skipped job (due to a failed
     # dependency) a success.
     if: always()
@@ -62,3 +63,18 @@ jobs:
         run: ./ci/install-rust.sh "${{ matrix.rust-version }}" --profile minimal
       - name: Build and test
         run: ./ci/build-and-test.sh
+
+  package-crate:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        run: ./ci/install-rust.sh stable.txt --profile minimal
+      - name: Package crate
+        run: ./ci/package-crate.sh
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: packaged-crate
+          path: output
+          if-no-files-found: error
