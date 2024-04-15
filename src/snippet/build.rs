@@ -94,8 +94,10 @@ impl SourceSnippetBuilder {
 impl SourceSnippet {
     /// Creates a snippet from a UTF-8 (possibly broken) source.
     ///
-    /// Each byte of ASCII control characters and invalid UTF-8 sequences is
-    /// represented as `<XX>` as alternative text.
+    /// "\n" and "\r\n" are treated as line breaks.
+    ///
+    /// Each byte of ASCII control characters (that are not line breaks) and
+    /// invalid UTF-8 sequences is represented as `<XX>` as alternative text.
     pub fn build_from_utf8(start_line: usize, source: &[u8], tab_width: usize) -> Self {
         Self::build_from_utf8_ex(
             start_line,
@@ -119,8 +121,11 @@ impl SourceSnippet {
 
     /// Creates a snippet from a UTF-8 (possibly broken) source.
     ///
-    /// `on_control` is used to handle ASCII control characters. `on_invalid`
-    /// and `invalid_multi` are used to handle invalid UTF-8 sequences.
+    /// "\n" and "\r\n" are treated as line breaks.
+    ///
+    /// `on_control` is used to handle ASCII control characters (that are not
+    /// line breaks). `on_invalid` and `invalid_multi` are used to handle
+    /// invalid UTF-8 sequences.
     ///
     /// When `invalid_multi` is `true`, `on_invalid` is called for each byte
     /// of an invalid UTF-8 sequence. Otherwise, `on_invalid` is called once
@@ -159,8 +164,12 @@ impl SourceSnippet {
                 }
             }
 
-            for chr in valid_utf8.chars() {
-                if chr == '\n' {
+            let mut chars = valid_utf8.chars();
+            while let Some(chr) = chars.next() {
+                if chr == '\r' && chars.as_str().starts_with('\n') {
+                    snippet.next_line(&[1, 1]);
+                    chars.next().unwrap();
+                } else if chr == '\n' {
                     snippet.next_line(&[1]);
                 } else {
                     let chr_width =
@@ -291,6 +300,57 @@ mod tests {
                 meta(1, 1),
                 meta(1, 1),
                 meta(1, 1),
+                meta(1, 0),
+            ],
+        );
+    }
+
+    #[test]
+    fn test_utf8_crlf() {
+        let source = b"123\r\n4\r6\r\n";
+        let snippet = SourceSnippet::build_from_utf8_ex(
+            0,
+            source,
+            |chr| (true, format!("<{:02X}>", chr as u8)),
+            |_| unreachable!(),
+            false,
+        );
+
+        assert_eq!(snippet.start_line, 0);
+        assert_eq!(snippet.lines.len(), 3);
+        assert_eq!(
+            snippet.lines,
+            [
+                SourceLine {
+                    text: "123".into(),
+                    alts: RangeSet::new(),
+                    width: 3,
+                },
+                SourceLine {
+                    text: "4<0D>6".into(),
+                    alts: RangeSet::from(1..=4),
+                    width: 6,
+                },
+                SourceLine {
+                    text: "".into(),
+                    alts: RangeSet::new(),
+                    width: 0,
+                },
+            ],
+        );
+        assert_eq!(snippet.line_map, [5, 10]);
+        assert_eq!(
+            snippet.metas,
+            [
+                meta(1, 1),
+                meta(1, 1),
+                meta(1, 1),
+                meta(1, 0),
+                meta(1, 0),
+                meta(1, 1),
+                meta(4, 4),
+                meta(1, 1),
+                meta(1, 0),
                 meta(1, 0),
             ],
         );
