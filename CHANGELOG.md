@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- CRLF sequences are now treated as a line break. Previously, they were treated
+  as a control character followed by a line break.
+
 ## 0.1.1 (2024-03-30)
 
 ### Changed
