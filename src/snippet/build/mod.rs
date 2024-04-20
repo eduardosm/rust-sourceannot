@@ -1,6 +1,7 @@
 use super::{SourceLine, SourceSnippet, SourceUnitMeta};
 use crate::range_set::RangeSet;
 
+mod latin1;
 mod utf8;
 
 struct SourceSnippetBuilder {

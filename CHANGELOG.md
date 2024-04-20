@@ -2,6 +2,10 @@
 
 ## 0.2.0 (unreleased)
 
+### Added
+
+- New functions to build snippets from Latin-1 (ISO 8859-1) sources.
+
 ### Changed
 
 - CRLF sequences are now treated as a line break. Previously, they were treated
