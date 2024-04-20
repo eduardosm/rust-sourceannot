@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "Checking MSRV consistency"
+. ci/utils.sh
+
+begin_group "Check MSRV consistency"
 
 msrv="$(cat ci/rust-versions/msrv.txt)"
 msrv="${msrv%.*}"
@@ -16,8 +18,12 @@ if [ "$(grep rust-version Cargo.toml)" != "rust-version = \"$msrv\"" ]; then
   exit 1
 fi
 
-echo "Checking shell scripts with shellcheck"
-find . -type f -name "*.sh" -not -path "./.git/*" -print0 | xargs -0 shellcheck
+end_group
 
-echo "Checking markdown documents with markdownlint"
+begin_group "Check shell scripts with shellcheck"
+find . -type f -name "*.sh" -not -path "./.git/*" -print0 | xargs -0 shellcheck
+end_group
+
+begin_group "Check markdown documents with markdownlint"
 find . -type f -name "*.md" -not -path "./.git/*" -print0 | xargs -0 markdownlint
+end_group
