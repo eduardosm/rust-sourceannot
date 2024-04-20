@@ -3,6 +3,28 @@ set -euo pipefail
 
 . ci/utils.sh
 
+begin_group "Check crate version"
+
+crate="sourceannot"
+version="$(crate_version "$crate")"
+
+if [[ ! "$version" =~ ^[0-9].[0-9].[0-9](-pre)?$ ]]; then
+  echo "Invalid version for $crate"
+  exit 1
+fi
+
+if [[ "$version" = *-pre ]]; then
+  publish_ok="$(crate_metadata "$crate" | jq '.publish == []')"
+else
+  publish_ok="$(crate_metadata "$crate" | jq '.publish == null')"
+fi
+if [ "$publish_ok" != "true" ]; then
+  echo "Invalid publish for $crate"
+  exit 1
+fi
+
+end_group
+
 begin_group "Check MSRV consistency"
 
 msrv="$(cat ci/rust-versions/msrv.txt)"
