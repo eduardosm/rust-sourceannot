@@ -3,6 +3,12 @@ set -euo pipefail
 
 . ci/utils.sh
 
+begin_group "Install Rust"
+./ci/install-rust.sh stable.txt --profile minimal
+# shellcheck disable=SC1090
+. "$HOME/.cargo/env"
+end_group
+
 mkdir checkout
 find . -mindepth 1 -maxdepth 1 -not -name checkout -print0 | xargs -0 mv -t checkout
 cd checkout
