@@ -52,7 +52,7 @@
 //!     text_alt_meta: Color::Default,
 //! };
 //!
-//! // Uou can use a different style for each annotation, but in
+//! // You can use a different style for each annotation, but in
 //! // this example we will use the same style for all of them.
 //! let annot_style = sourceannot::AnnotStyle {
 //!     caret: '^',
@@ -165,7 +165,7 @@ pub struct MarginStyle<M> {
     pub meta: M,
 }
 
-/// The style of a concrete annotation.
+/// The style of a particular annotation.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct AnnotStyle<M> {
     /// Caret character used to point to the annotated text.
