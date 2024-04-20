@@ -6,8 +6,9 @@ impl SourceSnippet {
     ///
     /// "\n" and "\r\n" are treated as line breaks.
     ///
-    /// Each byte of ASCII control characters (that are not line breaks) and
-    /// invalid UTF-8 sequences are represented as `<XX>` as alternative text.
+    /// Control characters (except tabs and line breaks) are represented as
+    /// `<XXXX>` as alternative text. Each byte of invalid UTF-8 sequences is
+    /// represented as `<XX>` as alternative text.
     pub fn build_from_utf8(start_line: usize, source: &[u8], tab_width: usize) -> Self {
         Self::build_from_utf8_ex(
             start_line,
@@ -41,8 +42,8 @@ impl SourceSnippet {
     /// of an invalid UTF-8 sequence. Otherwise, `on_invalid` is called once
     /// with the entire sequence.
     ///
-    /// `on_control` and `on_invalid` also returns a boolean to indicate if
-    /// the text should be rendered as alternative.
+    /// `on_control` and `on_invalid` also return a boolean to indicate if the
+    /// text should be rendered as alternative.
     pub fn build_from_utf8_ex<FnCtrl, FnInv>(
         start_line: usize,
         source: &[u8],
