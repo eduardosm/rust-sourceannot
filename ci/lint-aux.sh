@@ -13,8 +13,9 @@ if [[ "$(grep img.shields.io/badge/rustc README.md)" != *"rustc-$msrv+-lightgray
   exit 1
 fi
 
-if [ "$(grep rust-version Cargo.toml)" != "rust-version = \"$msrv\"" ]; then
-  echo "Incorrect rust-version in Cargo.toml"
+crate="sourceannot"
+if [ "$(crate_metadata "$crate" | jq -r '.rust_version')" != "$msrv" ]; then
+  echo "Incorrect rust-version for $crate"
   exit 1
 fi
 
