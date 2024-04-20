@@ -217,6 +217,87 @@ mod tests {
     }
 
     #[test]
+    fn test_non_ascii_chr() {
+        let source = b"123\n4\xC3\xBF6";
+        let snippet = SourceSnippet::build_from_utf8_ex(
+            0,
+            source,
+            |_| unreachable!(),
+            |_| unreachable!(),
+            false,
+        );
+
+        assert_eq!(snippet.start_line, 0);
+        assert_eq!(snippet.lines.len(), 2);
+        assert_eq!(
+            snippet.lines,
+            [
+                SourceLine {
+                    text: "123".into(),
+                    alts: RangeSet::new(),
+                    width: 3,
+                },
+                SourceLine {
+                    text: "4\u{FF}6".into(),
+                    alts: RangeSet::new(),
+                    width: 3,
+                },
+            ],
+        );
+        assert_eq!(snippet.line_map, [4]);
+        assert_eq!(
+            snippet.metas,
+            [
+                meta(1, 1),
+                meta(1, 1),
+                meta(1, 1),
+                meta(1, 0),
+                meta(1, 1),
+                meta(1, 2),
+                meta_extra(),
+                meta(1, 1),
+            ],
+        );
+    }
+
+    #[test]
+    fn test_control_chr() {
+        let source = b"123\n4\x006";
+        let snippet = SourceSnippet::build_from_utf8(0, source, 4);
+
+        assert_eq!(snippet.start_line, 0);
+        assert_eq!(snippet.lines.len(), 2);
+        assert_eq!(
+            snippet.lines,
+            [
+                SourceLine {
+                    text: "123".into(),
+                    alts: RangeSet::new(),
+                    width: 3,
+                },
+                SourceLine {
+                    text: "4<0000>6".into(),
+                    alts: RangeSet::from(1..=6),
+                    width: 8,
+                },
+            ],
+        );
+        assert_eq!(snippet.line_map, [4]);
+        assert_eq!(
+            snippet.metas,
+            [
+                meta(1, 1),
+                meta(1, 1),
+                meta(1, 1),
+                meta(1, 0),
+                meta(1, 1),
+                meta(6, 6),
+                meta(1, 1),
+            ],
+        );
+    }
+
+    #[test]
     fn test_crlf() {
         let source = b"123\r\n4\r6\r\n";
         let snippet = SourceSnippet::build_from_utf8_ex(
