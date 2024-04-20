@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v4
-      - name: Extract changelog
+      - name: Run job
         run: ./ci/extract-changelog.sh
       - name: Upload artifact
         uses: actions/upload-artifact@v4
