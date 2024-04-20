@@ -22,7 +22,7 @@ end_group
 mkdir "$out_dir"
 
 crate=sourceannot
-version="$(awk '/^version = ".+"$/ { sub("^version = \"", ""); sub("\"$", ""); print }' Cargo.toml)"
+version="$(crate_version "$crate")"
 
 begin_group "Package $crate"
 cargo package -p "$crate" --frozen
