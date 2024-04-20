@@ -6,7 +6,7 @@ impl SourceSnippet {
     ///
     /// "\n" and "\r\n" are treated as line breaks.
     ///
-    /// Each control character (that is not a line break) is represented as
+    /// Control characters (except tabs and line breaks) are represented as
     /// `<XX>` as alternative text.
     pub fn build_from_latin1(start_line: usize, source: &[u8], tab_width: usize) -> Self {
         Self::build_from_latin1_ex(start_line, source, |chr| {
