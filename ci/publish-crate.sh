@@ -15,7 +15,8 @@ end_group
 
 export CARGO_REGISTRY_TOKEN="$CRATES_IO_TOKEN"
 
-begin_group "Publish crate"
 crate="sourceannot"
-cargo publish -p "$crate" --no-verify --locked --dry-run
+
+begin_group "Publish $crate"
+cargo publish -p "$crate" --no-verify --locked
 end_group

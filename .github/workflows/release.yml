@@ -60,11 +60,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_VERSION: ${{ needs.get-version.outputs.version }}
         run: |
-          tag="v$RELEASE_VERSION" # FIXME
-          gh release create "$tag" \
+          gh release create "${GITHUB_REF#refs/tags/}" \
             "sourceannot-$RELEASE_VERSION.crate" \
-            --prerelease \
-            --title "${tag#v}" \
+            --verify-tag \
+            --title "$RELEASE_VERSION" \
             --notes-file version-changelog
 
   publish-crate:
