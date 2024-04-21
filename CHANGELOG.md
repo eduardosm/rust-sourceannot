@@ -11,6 +11,10 @@
 - CRLF sequences are now treated as a line break. Previously, they were treated
   as a control character followed by a line break.
 
+### Fixed
+
+- Documentation mistakes and typos.
+
 ## 0.1.1 (2024-03-30)
 
 ### Changed
