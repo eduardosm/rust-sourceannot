@@ -29,6 +29,19 @@ if [ "$publish_ok" != "true" ]; then
   exit 1
 fi
 
+changelog_date="$(awk -v ver="${version%-pre}" '/^## / { if ($2 == ver) print $3 }' CHANGELOG.md)"
+if [[ "$version" = *-pre ]]; then
+  if [ "$changelog_date" != "(unreleased)" ]; then
+    echo "Invalid date in changelog for version $version"
+    exit 1
+  fi
+else
+  if [[ ! "$changelog_date" =~ \([0-9]{4}-[0-9]{2}-[0-9]{2}\) ]]; then
+    echo "Invalid date in changelog for version $version"
+    exit 1
+  fi
+fi
+
 end_group
 
 begin_group "Check MSRV consistency"
