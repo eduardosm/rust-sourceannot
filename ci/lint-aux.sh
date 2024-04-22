@@ -3,18 +3,6 @@ set -euo pipefail
 
 . ci/utils.sh
 
-begin_group "Install lint utilities"
-sudo apt-get update
-sudo apt-get install -y --no-install-recommends shellcheck
-sudo npm install -g markdownlint-cli
-end_group
-
-begin_group "Install Rust"
-./ci/install-rust.sh stable.txt --profile minimal
-# shellcheck disable=SC1091
-. "$HOME/.cargo/env"
-end_group
-
 begin_group "Check crate version"
 
 crate="sourceannot"
