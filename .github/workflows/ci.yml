@@ -33,7 +33,7 @@ jobs:
       - name: Install lint utilities
         run: sudo npm install -g markdownlint-cli
       - name: Install Rust
-        run: ./ci/install-rust.sh stable.txt --profile minimal
+        run: ./ci/install-rust.sh stable --profile minimal
       - run: ./ci/lint-aux.sh
 
   extract-changelog:
@@ -41,7 +41,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust
-        run: ./ci/install-rust.sh stable.txt --profile minimal
+        run: ./ci/install-rust.sh stable --profile minimal
       - run: ./ci/extract-changelog.sh
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -55,7 +55,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust
-        run: ./ci/install-rust.sh stable.txt --profile minimal -c rustfmt
+        run: ./ci/install-rust.sh stable --profile minimal -c rustfmt
       - run: cargo fmt --all -- --check
 
   clippy:
@@ -63,7 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust
-        run: ./ci/install-rust.sh stable.txt --profile minimal -c clippy
+        run: ./ci/install-rust.sh stable --profile minimal -c clippy
       - run: ./ci/clippy.sh
 
   build-and-test:
@@ -71,8 +71,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - rust-version: msrv.txt
-          - rust-version: stable.txt
+          - rust-version: msrv
+          - rust-version: stable
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust
@@ -84,7 +84,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust
-        run: ./ci/install-rust.sh stable.txt --profile minimal
+        run: ./ci/install-rust.sh stable --profile minimal
       - run: ./ci/package-crate.sh
       - name: Upload artifact
         uses: actions/upload-artifact@v4
