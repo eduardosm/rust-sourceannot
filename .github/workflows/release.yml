@@ -33,12 +33,6 @@ jobs:
           name: version-changelog
           path: version-changelog/*
           if-no-files-found: error
-      - name: Upload packaged-crate artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: packaged-crate
-          path: packaged-crate/*
-          if-no-files-found: error
 
   create-gh-release:
     needs:
@@ -53,17 +47,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: version-changelog
-      - name: Download packaged-crate artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: packaged-crate
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_VERSION: ${{ needs.get-version.outputs.version }}
         run: |
           gh release create "${GITHUB_REF#refs/tags/}" \
-            "sourceannot-$RELEASE_VERSION.crate" \
             --verify-tag \
             --title "$RELEASE_VERSION" \
             --notes-file version-changelog
