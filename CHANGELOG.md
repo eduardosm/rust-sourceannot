@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.1 (unreleased)
+## 0.2.1 (2024-08-13)
 
 ### Added
 
