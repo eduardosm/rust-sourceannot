@@ -1,4 +1,7 @@
-use std::collections::BTreeMap;
+use alloc::collections::BTreeMap;
+use alloc::string::String;
+use alloc::string::ToString as _;
+use alloc::{vec, vec::Vec};
 
 use crate::snippet::SourceSpan;
 use crate::{AnnotStyle, MainStyle, SourceSnippet};
@@ -46,7 +49,7 @@ impl<'a, M> Annotations<'a, M> {
 
     pub fn add_annotation(
         &mut self,
-        span: std::ops::Range<usize>,
+        span: core::ops::Range<usize>,
         style: AnnotStyle<M>,
         label: Vec<(String, M)>,
     ) {
@@ -495,7 +498,7 @@ impl<'a, M: Clone> Annotations<'a, M> {
                     } else {
                         self.annots[annot_i].style.line_meta.clone()
                     };
-                    parts.push((std::iter::repeat(chr).take(len).collect(), style));
+                    parts.push((core::iter::repeat(chr).take(len).collect(), style));
                     i += len;
                 }
                 if !last_has_vertical {
@@ -549,7 +552,7 @@ impl<'a, M: Clone> Annotations<'a, M> {
 
                 if annot.span.end_col != 0 {
                     parts.push((
-                        std::iter::repeat(self.main_style.horizontal_char)
+                        core::iter::repeat(self.main_style.horizontal_char)
                             .take(annot.span.end_col - 1)
                             .collect(),
                         annot.style.line_meta.clone(),
@@ -576,7 +579,7 @@ impl<'a, M: Clone> Annotations<'a, M> {
                 ml_slots[annot.ml_slot] = Some(&annot.style.line_meta);
 
                 parts.push((
-                    std::iter::repeat(self.main_style.horizontal_char)
+                    core::iter::repeat(self.main_style.horizontal_char)
                         .take(annot.span.start_col)
                         .collect(),
                     annot.style.line_meta.clone(),

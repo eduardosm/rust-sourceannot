@@ -1,3 +1,6 @@
+use alloc::format;
+use alloc::string::String;
+
 use super::SourceSnippetBuilder;
 use crate::SourceSnippet;
 
@@ -62,6 +65,8 @@ impl SourceSnippet {
 
 #[cfg(test)]
 mod tests {
+    use alloc::format;
+
     use crate::range_set::RangeSet;
     use crate::snippet::{SourceLine, SourceSnippet, SourceUnitMeta};
 

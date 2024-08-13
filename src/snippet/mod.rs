@@ -1,3 +1,6 @@
+use alloc::boxed::Box;
+use alloc::vec::Vec;
+
 mod build;
 
 use crate::range_set::RangeSet;
@@ -23,8 +26,8 @@ struct SourceUnitMeta {
     inner: u16,
 }
 
-impl std::fmt::Debug for SourceUnitMeta {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Debug for SourceUnitMeta {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         if self.is_extra() {
             f.write_str("SourceUnitMeta::extra()")
         } else {

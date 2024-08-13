@@ -1,3 +1,6 @@
+use alloc::format;
+use alloc::string::String;
+
 use super::SourceSnippetBuilder;
 use crate::SourceSnippet;
 
@@ -61,7 +64,7 @@ impl SourceSnippet {
         while !rem_source.is_empty() {
             let valid_utf8;
             let invalid_utf8: &[u8];
-            match std::str::from_utf8(rem_source) {
+            match core::str::from_utf8(rem_source) {
                 Ok(s) => {
                     valid_utf8 = s;
                     invalid_utf8 = b"";
@@ -70,7 +73,7 @@ impl SourceSnippet {
                 Err(e) => {
                     let (valid, after_valid) = rem_source.split_at(e.valid_up_to());
                     let error_len = e.error_len().unwrap_or(after_valid.len());
-                    valid_utf8 = std::str::from_utf8(valid).unwrap();
+                    valid_utf8 = core::str::from_utf8(valid).unwrap();
                     (invalid_utf8, rem_source) = after_valid.split_at(error_len);
                 }
             }
@@ -114,6 +117,9 @@ impl SourceSnippet {
 
 #[cfg(test)]
 mod tests {
+    use alloc::format;
+    use alloc::string::String;
+
     use crate::range_set::RangeSet;
     use crate::snippet::{SourceLine, SourceSnippet, SourceUnitMeta};
 

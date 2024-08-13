@@ -1,3 +1,6 @@
+use alloc::string::String;
+use alloc::vec::Vec;
+
 use super::{SourceLine, SourceSnippet, SourceUnitMeta};
 use crate::range_set::RangeSet;
 
@@ -44,9 +47,9 @@ impl SourceSnippetBuilder {
 
     fn next_line(&mut self, extra_widths: &[usize]) {
         self.lines.push(SourceLine {
-            text: std::mem::take(&mut self.current_line_text).into_boxed_str(),
-            alts: std::mem::take(&mut self.current_line_alts),
-            width: std::mem::replace(&mut self.current_line_width, 0),
+            text: core::mem::take(&mut self.current_line_text).into_boxed_str(),
+            alts: core::mem::take(&mut self.current_line_alts),
+            width: core::mem::replace(&mut self.current_line_width, 0),
         });
         self.metas
             .extend(extra_widths.iter().map(|&w| SourceUnitMeta::new(w, 0)));
