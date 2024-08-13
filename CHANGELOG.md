@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 (unreleased)
+
+### Added
+
+- `no_std` support.
+
 ## 0.2.0 (2024-04-24)
 
 ### Added

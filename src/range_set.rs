@@ -1,4 +1,5 @@
-use std::ops::RangeInclusive;
+use alloc::{vec, vec::Vec};
+use core::ops::RangeInclusive;
 
 #[derive(Clone, PartialEq, Eq)]
 pub(crate) struct RangeSet<T: Copy + Ord>
@@ -8,11 +9,11 @@ where
     ranges: Vec<RangeInclusive<T>>,
 }
 
-impl<T: Copy + Ord + std::fmt::Debug> std::fmt::Debug for RangeSet<T>
+impl<T: Copy + Ord + core::fmt::Debug> core::fmt::Debug for RangeSet<T>
 where
     RangeInclusive<T>: Iterator,
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         self.ranges.fmt(f)
     }
 }
@@ -93,11 +94,11 @@ where
     fn search(&self, value: &T) -> Result<usize, usize> {
         self.ranges.binary_search_by(|range| {
             if range.start() > value {
-                std::cmp::Ordering::Greater
+                core::cmp::Ordering::Greater
             } else if range.end() < value {
-                std::cmp::Ordering::Less
+                core::cmp::Ordering::Less
             } else {
-                std::cmp::Ordering::Equal
+                core::cmp::Ordering::Equal
             }
         })
     }

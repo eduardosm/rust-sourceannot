@@ -6,9 +6,12 @@
     unused_qualifications
 )]
 #![forbid(unsafe_code)]
+#![no_std]
 
 //! A library to render snippets of source code with annotations.
 //! It is meant to be used as a building block for compiler diagnostics.
+//!
+//! This crate is `#![no_std]`, but it depends on `alloc`.
 //!
 //! # Example
 //!
@@ -109,6 +112,8 @@
 //! 3 │ │ }
 //!   │ ╰─^ this is the `main` function
 //! ```
+
+extern crate alloc;
 
 mod annots;
 mod range_set;
