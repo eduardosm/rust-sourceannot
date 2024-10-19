@@ -221,7 +221,7 @@ impl<'a, M> Annotations<'a, M> {
     }
 }
 
-impl<'a, M: Clone> Annotations<'a, M> {
+impl<M: Clone> Annotations<'_, M> {
     /// Renders the snippet with the annotations.
     ///
     /// `max_line_no_width` should be at least
