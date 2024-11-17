@@ -60,25 +60,8 @@ impl SourceSnippet {
     {
         let mut snippet = SourceSnippetBuilder::new(start_line);
 
-        let mut rem_source = source;
-        while !rem_source.is_empty() {
-            let valid_utf8;
-            let invalid_utf8: &[u8];
-            match core::str::from_utf8(rem_source) {
-                Ok(s) => {
-                    valid_utf8 = s;
-                    invalid_utf8 = b"";
-                    rem_source = b"";
-                }
-                Err(e) => {
-                    let (valid, after_valid) = rem_source.split_at(e.valid_up_to());
-                    let error_len = e.error_len().unwrap_or(after_valid.len());
-                    valid_utf8 = core::str::from_utf8(valid).unwrap();
-                    (invalid_utf8, rem_source) = after_valid.split_at(error_len);
-                }
-            }
-
-            let mut chars = valid_utf8.chars();
+        for source_chunk in source.utf8_chunks() {
+            let mut chars = source_chunk.valid().chars();
             while let Some(chr) = chars.next() {
                 if chr == '\r' && chars.as_str().starts_with('\n') {
                     snippet.next_line(&[1, 1]);
@@ -98,6 +81,7 @@ impl SourceSnippet {
                 }
             }
 
+            let invalid_utf8 = source_chunk.invalid();
             if !invalid_utf8.is_empty() {
                 if invalid_multi {
                     for &byte in invalid_utf8.iter() {
