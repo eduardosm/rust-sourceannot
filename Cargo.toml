@@ -12,7 +12,8 @@ exclude = ["/.github", ".gitignore", "/ci"]
 publish = true
 
 [dependencies]
-unicode-width = "0.2.0"
+unicode-width = "0.2.2"
 
 [dev-dependencies]
-indoc = "2.0.5"
+indoc = "2.0.7"
+
