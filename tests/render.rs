@@ -262,6 +262,45 @@ fn test_render_multi_line_3() {
     let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
+    annots.add_annotation(0..18, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(6..11, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+
+    let rendered = annots.render(1, 0, 0);
+    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
+    let styles = gather_styles(&rendered);
+
+    assert_eq!(
+        text,
+        indoc::indoc! {"
+            1 │  ╭ 1234
+            2 │  │ 5678
+              │ ╭│──-
+            3 │ ││ 90ab
+              │ ╰│─- test 2
+            4 │  │ cdef
+              │  ╰───^ test 1
+        "},
+    );
+    assert_eq!(
+        styles,
+        indoc::indoc! {"
+            msmsslsaaaas
+            msmsslstbbbs
+            ssmsLlLLLs
+            msmsLlsbttts
+            ssmsLlLLs222222s
+            msmsslsaaats
+            ssmssllllls111111s
+        "},
+    );
+}
+
+#[test]
+fn test_render_multi_line_4() {
+    let source = "1234\n5678\n90ab\ncdef\n";
+    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+
+    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(0..7, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
     annots.add_annotation(6..18, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
 
