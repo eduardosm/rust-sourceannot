@@ -41,10 +41,10 @@ impl SourceSnippet {
         let mut chars = source.iter();
         while let Some(&chr) = chars.next() {
             if chr == b'\r' && chars.as_slice().starts_with(b"\n") {
-                snippet.next_line(&[1, 1]);
+                snippet.next_line(2);
                 chars.next().unwrap();
             } else if chr == b'\n' {
-                snippet.next_line(&[1]);
+                snippet.next_line(1);
             } else {
                 let orig_len = 1;
 
@@ -72,6 +72,10 @@ mod tests {
 
     fn meta(width: usize, len: usize) -> SourceUnitMeta {
         SourceUnitMeta::new(width, len)
+    }
+
+    fn meta_extra() -> SourceUnitMeta {
+        SourceUnitMeta::extra()
     }
 
     #[test]
@@ -264,12 +268,12 @@ mod tests {
                 meta(1, 1),
                 meta(1, 1),
                 meta(1, 0),
-                meta(1, 0),
+                meta_extra(),
                 meta(1, 1),
                 meta(4, 4),
                 meta(1, 1),
                 meta(1, 0),
-                meta(1, 0),
+                meta_extra(),
             ],
         );
     }

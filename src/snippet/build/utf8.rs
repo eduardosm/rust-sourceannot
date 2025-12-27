@@ -64,10 +64,10 @@ impl SourceSnippet {
             let mut chars = source_chunk.valid().chars();
             while let Some(chr) = chars.next() {
                 if chr == '\r' && chars.as_str().starts_with('\n') {
-                    snippet.next_line(&[1, 1]);
+                    snippet.next_line(2);
                     chars.next().unwrap();
                 } else if chr == '\n' {
-                    snippet.next_line(&[1]);
+                    snippet.next_line(1);
                 } else {
                     let chr_width =
                         unicode_width::UnicodeWidthChar::width(chr).filter(|_| chr != '\0');
@@ -329,12 +329,12 @@ mod tests {
                 meta(1, 1),
                 meta(1, 1),
                 meta(1, 0),
-                meta(1, 0),
+                meta_extra(),
                 meta(1, 1),
                 meta(4, 4),
                 meta(1, 1),
                 meta(1, 0),
-                meta(1, 0),
+                meta_extra(),
             ],
         );
     }

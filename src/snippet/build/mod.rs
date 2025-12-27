@@ -45,14 +45,18 @@ impl SourceSnippetBuilder {
         }
     }
 
-    fn next_line(&mut self, extra_widths: &[usize]) {
+    fn next_line(&mut self, orig_len: usize) {
         self.lines.push(SourceLine {
             text: core::mem::take(&mut self.current_line_text).into_boxed_str(),
             alts: core::mem::take(&mut self.current_line_alts),
             width: core::mem::replace(&mut self.current_line_width, 0),
         });
-        self.metas
-            .extend(extra_widths.iter().map(|&w| SourceUnitMeta::new(w, 0)));
+        if orig_len != 0 {
+            self.metas.push(SourceUnitMeta::new(1, 0));
+            for _ in 1..orig_len {
+                self.metas.push(SourceUnitMeta::extra());
+            }
+        }
         self.line_map.push(self.metas.len());
     }
 

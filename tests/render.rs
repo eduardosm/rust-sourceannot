@@ -465,3 +465,199 @@ fn test_render_tab() {
         "},
     );
 }
+
+#[test]
+fn test_render_line_break_lf_1() {
+    let source = "1234\n5678\n90ab\ncdef\n";
+    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+
+    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
+    annots.add_annotation(4..5, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+
+    let rendered = annots.render(1, 0, 0);
+    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
+    let styles = gather_styles(&rendered);
+
+    assert_eq!(
+        text,
+        indoc::indoc! {"
+            1 │ 1234
+              │     ^ test
+        "},
+    );
+    assert_eq!(
+        styles,
+        indoc::indoc! {"
+            msmstttts
+            ssmsssssls1111s
+        "},
+    );
+}
+
+#[test]
+fn test_render_line_break_lf_2() {
+    let source = "1234\n5678\n90ab\ncdef\n";
+    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+
+    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
+    annots.add_annotation(3..5, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+
+    let rendered = annots.render(1, 0, 0);
+    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
+    let styles = gather_styles(&rendered);
+
+    assert_eq!(
+        text,
+        indoc::indoc! {"
+            1 │ 1234
+              │    ^^ test
+        "},
+    );
+    assert_eq!(
+        styles,
+        indoc::indoc! {"
+            msmstttas
+            ssmsssslls1111s
+        "},
+    );
+}
+
+#[test]
+fn test_render_line_break_crlf_1() {
+    let source = "1234\r\n5678\r\n90ab\r\ncdef\r\n";
+    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+
+    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
+    annots.add_annotation(4..5, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+
+    let rendered = annots.render(1, 0, 0);
+    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
+    let styles = gather_styles(&rendered);
+
+    assert_eq!(
+        text,
+        indoc::indoc! {"
+            1 │ 1234
+              │     ^ test
+        "},
+    );
+    assert_eq!(
+        styles,
+        indoc::indoc! {"
+            msmstttts
+            ssmsssssls1111s
+        "},
+    );
+}
+
+#[test]
+fn test_render_line_break_crlf_2() {
+    let source = "1234\r\n5678\r\n90ab\r\ncdef\r\n";
+    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+
+    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
+    annots.add_annotation(5..6, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+
+    let rendered = annots.render(1, 0, 0);
+    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
+    let styles = gather_styles(&rendered);
+
+    assert_eq!(
+        text,
+        indoc::indoc! {"
+            1 │ 1234
+              │     ^ test
+        "},
+    );
+    assert_eq!(
+        styles,
+        indoc::indoc! {"
+            msmstttts
+            ssmsssssls1111s
+        "},
+    );
+}
+
+#[test]
+fn test_render_line_break_crlf_3() {
+    let source = "1234\r\n5678\r\n90ab\r\ncdef\r\n";
+    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+
+    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
+    annots.add_annotation(4..6, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+
+    let rendered = annots.render(1, 0, 0);
+    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
+    let styles = gather_styles(&rendered);
+
+    assert_eq!(
+        text,
+        indoc::indoc! {"
+            1 │ 1234
+              │     ^ test
+        "},
+    );
+    assert_eq!(
+        styles,
+        indoc::indoc! {"
+            msmstttts
+            ssmsssssls1111s
+        "},
+    );
+}
+
+#[test]
+fn test_render_line_break_crlf_4() {
+    let source = "1234\r\n5678\r\n90ab\r\ncdef\r\n";
+    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+
+    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
+    annots.add_annotation(3..5, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+
+    let rendered = annots.render(1, 0, 0);
+    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
+    let styles = gather_styles(&rendered);
+
+    assert_eq!(
+        text,
+        indoc::indoc! {"
+            1 │ 1234
+              │    ^^ test
+        "},
+    );
+    assert_eq!(
+        styles,
+        indoc::indoc! {"
+            msmstttas
+            ssmsssslls1111s
+        "},
+    );
+}
+
+#[test]
+fn test_render_line_break_crlf_5() {
+    let source = "1234\r\n5678\r\n90ab\r\ncdef\r\n";
+    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+
+    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
+    annots.add_annotation(3..6, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+
+    let rendered = annots.render(1, 0, 0);
+    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
+    let styles = gather_styles(&rendered);
+
+    assert_eq!(
+        text,
+        indoc::indoc! {"
+            1 │ 1234
+              │    ^^ test
+        "},
+    );
+    assert_eq!(
+        styles,
+        indoc::indoc! {"
+            msmstttas
+            ssmsssslls1111s
+        "},
+    );
+}
