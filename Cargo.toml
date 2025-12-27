@@ -2,7 +2,7 @@
 name = "sourceannot"
 version = "0.2.1"
 authors = ["Eduardo Sánchez Muñoz <eduardosm-dev@e64.io>"]
-edition = "2021"
+edition = "2024"
 rust-version = "1.85"
 description = "A library to render snippets of source code with annotations"
 repository = "https://github.com/eduardosm/rust-sourceannot"
@@ -16,4 +16,3 @@ unicode-width = "0.2.2"
 
 [dev-dependencies]
 indoc = "2.0.7"
-
