@@ -498,7 +498,7 @@ impl<M: Clone> Annotations<'_, M> {
                     } else {
                         self.annots[annot_i].style.line_meta.clone()
                     };
-                    parts.push((core::iter::repeat(chr).take(len).collect(), style));
+                    parts.push((core::iter::repeat_n(chr, len).collect(), style));
                     i += len;
                 }
                 if !last_has_vertical {
@@ -552,9 +552,11 @@ impl<M: Clone> Annotations<'_, M> {
 
                 if annot.span.end_col != 0 {
                     parts.push((
-                        core::iter::repeat(self.main_style.horizontal_char)
-                            .take(annot.span.end_col - 1)
-                            .collect(),
+                        core::iter::repeat_n(
+                            self.main_style.horizontal_char,
+                            annot.span.end_col - 1,
+                        )
+                        .collect(),
                         annot.style.line_meta.clone(),
                     ));
                 }
@@ -579,8 +581,7 @@ impl<M: Clone> Annotations<'_, M> {
                 ml_slots[annot.ml_slot] = Some(&annot.style.line_meta);
 
                 parts.push((
-                    core::iter::repeat(self.main_style.horizontal_char)
-                        .take(annot.span.start_col)
+                    core::iter::repeat_n(self.main_style.horizontal_char, annot.span.start_col)
                         .collect(),
                     annot.style.line_meta.clone(),
                 ));

@@ -3,7 +3,7 @@
 [![GitHub Actions Status](https://github.com/eduardosm/rust-sourceannot/workflows/CI/badge.svg)](https://github.com/eduardosm/rust-sourceannot/actions)
 [![crates.io](https://img.shields.io/crates/v/sourceannot.svg)](https://crates.io/crates/sourceannot)
 [![Documentation](https://docs.rs/sourceannot/badge.svg)](https://docs.rs/sourceannot)
-![MSRV](https://img.shields.io/badge/rustc-1.74+-lightgray.svg)
+![MSRV](https://img.shields.io/badge/rustc-1.85+-lightgray.svg)
 [![License](https://img.shields.io/crates/l/sourceannot.svg)](https://github.com/eduardosm/rust-sourceannot#license)
 
 A library to render snippets of source code with annotations.
