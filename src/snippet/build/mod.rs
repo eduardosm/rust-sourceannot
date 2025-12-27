@@ -54,6 +54,9 @@ impl SourceSnippetBuilder {
         if orig_len != 0 {
             self.metas.push(SourceUnitMeta::new(1, 0));
             for _ in 1..orig_len {
+                // Each element of `self.metas` corresponds to a byte or unit in the
+                // original source, so fill with "extras" for multi-unit chunks (for
+                // example, a CRLF line break).
                 self.metas.push(SourceUnitMeta::extra());
             }
         }
@@ -75,8 +78,9 @@ impl SourceSnippetBuilder {
 
         self.metas.push(SourceUnitMeta::new(width, text.len()));
         for _ in 1..orig_len {
-            // Each element of `snippet.widths` corresponds to a byte in `source`,
-            // so fill with -1 for multi-unit chunks.
+            // Each element of `self.metas` corresponds to a byte or unit in the
+            // original source, so fill with "extras" for multi-unit chunks (for
+            // example, a multi-byte invalid UTF-8 sequence).
             self.metas.push(SourceUnitMeta::extra());
         }
     }
@@ -94,8 +98,9 @@ impl SourceSnippetBuilder {
 
         self.metas.push(SourceUnitMeta::new(width, chr.len_utf8()));
         for _ in 1..orig_len {
-            // Each element of `snippet.widths` corresponds to a byte in `source`,
-            // so fill with -1 for multi-unit characters.
+            // Each element of `self.metas` corresponds to a byte or unit in the
+            // original source, so fill with "extras" for multi-unit chunks (for
+            // example, a multi-byte UTF-8 character).
             self.metas.push(SourceUnitMeta::extra());
         }
     }
