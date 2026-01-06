@@ -136,12 +136,10 @@ mod tests {
                 SourceLine {
                     text: "123".into(),
                     alts: RangeSet::new(),
-                    width: 3,
                 },
                 SourceLine {
                     text: "456".into(),
                     alts: RangeSet::new(),
-                    width: 3,
                 },
             ],
         );
@@ -178,17 +176,14 @@ mod tests {
                 SourceLine {
                     text: "123".into(),
                     alts: RangeSet::new(),
-                    width: 3,
                 },
                 SourceLine {
                     text: "456".into(),
                     alts: RangeSet::new(),
-                    width: 3,
                 },
                 SourceLine {
                     text: "".into(),
                     alts: RangeSet::new(),
-                    width: 0,
                 },
             ],
         );
@@ -226,12 +221,10 @@ mod tests {
                 SourceLine {
                     text: "123".into(),
                     alts: RangeSet::new(),
-                    width: 3,
                 },
                 SourceLine {
                     text: "4\u{FF}6".into(),
                     alts: RangeSet::new(),
-                    width: 3,
                 },
             ],
         );
@@ -263,12 +256,10 @@ mod tests {
                 SourceLine {
                     text: "123".into(),
                     alts: RangeSet::new(),
-                    width: 3,
                 },
                 SourceLine {
                     text: "4<0000>6".into(),
                     alts: RangeSet::from(1..=6),
-                    width: 8,
                 },
             ],
         );
@@ -305,17 +296,14 @@ mod tests {
                 SourceLine {
                     text: "123".into(),
                     alts: RangeSet::new(),
-                    width: 3,
                 },
                 SourceLine {
                     text: "4<0D>6".into(),
                     alts: RangeSet::from(1..=4),
-                    width: 6,
                 },
                 SourceLine {
                     text: "".into(),
                     alts: RangeSet::new(),
-                    width: 0,
                 },
             ],
         );
@@ -355,12 +343,10 @@ mod tests {
                 SourceLine {
                     text: "1\u{FF12}3".into(),
                     alts: RangeSet::new(),
-                    width: 4,
                 },
                 SourceLine {
                     text: "456".into(),
                     alts: RangeSet::new(),
-                    width: 3,
                 },
             ],
         );
@@ -393,12 +379,10 @@ mod tests {
                 SourceLine {
                     text: "123".into(),
                     alts: RangeSet::new(),
-                    width: 3,
                 },
                 SourceLine {
                     text: "    456".into(),
                     alts: RangeSet::new(),
-                    width: 7,
                 },
             ],
         );
@@ -444,12 +428,10 @@ mod tests {
                 SourceLine {
                     text: "1<F180>3".into(),
                     alts: RangeSet::from(1..=6),
-                    width: 8,
                 },
                 SourceLine {
                     text: "456".into(),
                     alts: RangeSet::new(),
-                    width: 3,
                 },
             ],
         );
@@ -491,12 +473,10 @@ mod tests {
                 SourceLine {
                     text: "1<F1><80>3".into(),
                     alts: RangeSet::from(1..=8),
-                    width: 10,
                 },
                 SourceLine {
                     text: "456".into(),
                     alts: RangeSet::new(),
-                    width: 3,
                 },
             ],
         );
@@ -533,7 +513,6 @@ mod tests {
             [SourceLine {
                 text: format!("1{}2", "\u{A7}".repeat(150)).into_boxed_str(),
                 alts: RangeSet::from(1..=300),
-                width: 152,
             }],
         );
         assert_eq!(snippet.line_map, []);
