@@ -47,6 +47,9 @@ impl SourceSnippet {
     ///
     /// `on_control` and `on_invalid` also return a boolean to indicate if the
     /// text should be rendered as alternative.
+    ///
+    /// `on_control` and `on_invalid` should not return a string that contains
+    /// tabs, line breaks or any other control characters.
     pub fn build_from_utf8_ex<FnCtrl, FnInv>(
         start_line: usize,
         source: &[u8],
