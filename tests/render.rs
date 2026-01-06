@@ -39,17 +39,25 @@ const ANNOT_STYLE_2: AnnotStyle<char> = AnnotStyle {
     line_meta: 'L',
 };
 
-fn gather_styles(rendered: &[(String, char)]) -> String {
-    let mut r = String::new();
-    for (text, style) in rendered.iter() {
-        for chr in text.chars() {
-            r.push(*style);
-            if chr == '\n' {
-                r.push('\n');
+struct TestOutput {
+    text: String,
+    styles: String,
+}
+
+impl sourceannot::Output<char> for &mut TestOutput {
+    type Error = core::convert::Infallible;
+
+    fn put_str(&mut self, s: &str, &style: &char) -> Result<(), Self::Error> {
+        self.text.push_str(s);
+        for c in s.chars() {
+            self.styles.push(style);
+            if c == '\n' {
+                self.styles.push('\n');
             }
         }
+
+        Ok(())
     }
-    r
 }
 
 #[test]
@@ -60,19 +68,21 @@ fn test_render_single_line_1() {
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(1..4, ANNOT_STYLE_1, vec![("test".into(), '1')]);
 
-    let rendered = annots.render(1, 0, 0);
-    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
-    let styles = gather_styles(&rendered);
+    let mut output = TestOutput {
+        text: String::new(),
+        styles: String::new(),
+    };
+    annots.render(1, 0, 0, &mut output);
 
     assert_eq!(
-        text,
+        output.text,
         indoc::indoc! {"
             1 │ 1234
               │  ^^^ test
         "},
     );
     assert_eq!(
-        styles,
+        output.styles,
         indoc::indoc! {"
             msmstaaas
             ssmssllls1111s
@@ -89,12 +99,14 @@ fn test_render_single_line_2() {
     annots.add_annotation(1..4, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
     annots.add_annotation(10..12, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
 
-    let rendered = annots.render(1, 0, 0);
-    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
-    let styles = gather_styles(&rendered);
+    let mut output = TestOutput {
+        text: String::new(),
+        styles: String::new(),
+    };
+    annots.render(1, 0, 0, &mut output);
 
     assert_eq!(
-        text,
+        output.text,
         indoc::indoc! {"
             1 │ 1234
               │  ^^^ test 1
@@ -104,7 +116,7 @@ fn test_render_single_line_2() {
         "},
     );
     assert_eq!(
-        styles,
+        output.styles,
         indoc::indoc! {"
             msmstaaas
             ssmssllls111111s
@@ -124,12 +136,14 @@ fn test_render_single_line_3() {
     annots.add_annotation(0..2, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
     annots.add_annotation(3..4, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
 
-    let rendered = annots.render(1, 0, 0);
-    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
-    let styles = gather_styles(&rendered);
+    let mut output = TestOutput {
+        text: String::new(),
+        styles: String::new(),
+    };
+    annots.render(1, 0, 0, &mut output);
 
     assert_eq!(
-        text,
+        output.text,
         indoc::indoc! {"
             1 │ 1234
               │ ^^ - test 2
@@ -138,7 +152,7 @@ fn test_render_single_line_3() {
         "},
     );
     assert_eq!(
-        styles,
+        output.styles,
         indoc::indoc! {"
             msmsaatbs
             ssmsllsLs222222s
@@ -157,12 +171,14 @@ fn test_render_single_line_4() {
     annots.add_annotation(1..2, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
     annots.add_annotation(0..4, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
 
-    let rendered = annots.render(1, 0, 0);
-    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
-    let styles = gather_styles(&rendered);
+    let mut output = TestOutput {
+        text: String::new(),
+        styles: String::new(),
+    };
+    annots.render(1, 0, 0, &mut output);
 
     assert_eq!(
-        text,
+        output.text,
         indoc::indoc! {"
             1 │ 1234
               │ -^--
@@ -172,7 +188,7 @@ fn test_render_single_line_4() {
         "},
     );
     assert_eq!(
-        styles,
+        output.styles,
         indoc::indoc! {"
             msmsbabbs
             ssmsLlLLs
@@ -191,12 +207,14 @@ fn test_render_multi_line_1() {
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(1..12, ANNOT_STYLE_1, vec![("test".into(), '1')]);
 
-    let rendered = annots.render(1, 0, 0);
-    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
-    let styles = gather_styles(&rendered);
+    let mut output = TestOutput {
+        text: String::new(),
+        styles: String::new(),
+    };
+    annots.render(1, 0, 0, &mut output);
 
     assert_eq!(
-        text,
+        output.text,
         indoc::indoc! {"
             1 │   1234
               │ ╭──^
@@ -206,7 +224,7 @@ fn test_render_multi_line_1() {
         "},
     );
     assert_eq!(
-        styles,
+        output.styles,
         indoc::indoc! {"
             msmssstaaas
             ssmslllls
@@ -226,12 +244,14 @@ fn test_render_multi_line_2() {
     annots.add_annotation(0..11, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
     annots.add_annotation(6..18, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
 
-    let rendered = annots.render(1, 0, 0);
-    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
-    let styles = gather_styles(&rendered);
+    let mut output = TestOutput {
+        text: String::new(),
+        styles: String::new(),
+    };
+    annots.render(1, 0, 0, &mut output);
 
     assert_eq!(
-        text,
+        output.text,
         indoc::indoc! {"
             1 │  ╭ 1234
             2 │  │ 5678
@@ -243,7 +263,7 @@ fn test_render_multi_line_2() {
         "},
     );
     assert_eq!(
-        styles,
+        output.styles,
         indoc::indoc! {"
             msmsslsaaaas
             msmsslstbbbs
@@ -265,12 +285,14 @@ fn test_render_multi_line_3() {
     annots.add_annotation(0..18, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
     annots.add_annotation(6..11, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
 
-    let rendered = annots.render(1, 0, 0);
-    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
-    let styles = gather_styles(&rendered);
+    let mut output = TestOutput {
+        text: String::new(),
+        styles: String::new(),
+    };
+    annots.render(1, 0, 0, &mut output);
 
     assert_eq!(
-        text,
+        output.text,
         indoc::indoc! {"
             1 │  ╭ 1234
             2 │  │ 5678
@@ -282,7 +304,7 @@ fn test_render_multi_line_3() {
         "},
     );
     assert_eq!(
-        styles,
+        output.styles,
         indoc::indoc! {"
             msmsslsaaaas
             msmsslstbbbs
@@ -304,12 +326,14 @@ fn test_render_multi_line_4() {
     annots.add_annotation(0..7, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
     annots.add_annotation(6..18, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
 
-    let rendered = annots.render(1, 0, 0);
-    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
-    let styles = gather_styles(&rendered);
+    let mut output = TestOutput {
+        text: String::new(),
+        styles: String::new(),
+    };
+    annots.render(1, 0, 0, &mut output);
 
     assert_eq!(
-        text,
+        output.text,
         indoc::indoc! {"
             1 │ ╭ 1234
             2 │ │ 5678
@@ -321,7 +345,7 @@ fn test_render_multi_line_4() {
         "},
     );
     assert_eq!(
-        styles,
+        output.styles,
         indoc::indoc! {"
             msmslsaaaas
             msmslsaabbs
@@ -342,12 +366,14 @@ fn test_render_multi_line_crlf() {
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(1..14, ANNOT_STYLE_1, vec![("test".into(), '1')]);
 
-    let rendered = annots.render(1, 0, 0);
-    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
-    let styles = gather_styles(&rendered);
+    let mut output = TestOutput {
+        text: String::new(),
+        styles: String::new(),
+    };
+    annots.render(1, 0, 0, &mut output);
 
     assert_eq!(
-        text,
+        output.text,
         indoc::indoc! {"
             1 │   1234
               │ ╭──^
@@ -357,7 +383,7 @@ fn test_render_multi_line_crlf() {
         "},
     );
     assert_eq!(
-        styles,
+        output.styles,
         indoc::indoc! {"
             msmssstaaas
             ssmslllls
@@ -377,12 +403,14 @@ fn test_render_single_line_within_multi_line() {
     annots.add_annotation(1..12, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
     annots.add_annotation(6..9, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
 
-    let rendered = annots.render(1, 0, 0);
-    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
-    let styles = gather_styles(&rendered);
+    let mut output = TestOutput {
+        text: String::new(),
+        styles: String::new(),
+    };
+    annots.render(1, 0, 0, &mut output);
 
     assert_eq!(
-        text,
+        output.text,
         indoc::indoc! {"
             1 │   1234
               │ ╭──^
@@ -393,7 +421,7 @@ fn test_render_single_line_within_multi_line() {
         "},
     );
     assert_eq!(
-        styles,
+        output.styles,
         indoc::indoc! {"
             msmssstaaas
             ssmslllls
@@ -413,19 +441,21 @@ fn test_render_zero_len_span() {
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(1..1, ANNOT_STYLE_1, vec![("test".into(), '1')]);
 
-    let rendered = annots.render(1, 0, 0);
-    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
-    let styles = gather_styles(&rendered);
+    let mut output = TestOutput {
+        text: String::new(),
+        styles: String::new(),
+    };
+    annots.render(1, 0, 0, &mut output);
 
     assert_eq!(
-        text,
+        output.text,
         indoc::indoc! {"
             1 │ 1234
               │  ^ test
         "},
     );
     assert_eq!(
-        styles,
+        output.styles,
         indoc::indoc! {"
             msmstttts
             ssmssls1111s
@@ -442,12 +472,14 @@ fn test_render_tab() {
     annots.add_annotation(1..3, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
     annots.add_annotation(5..6, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
 
-    let rendered = annots.render(1, 0, 0);
-    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
-    let styles = gather_styles(&rendered);
+    let mut output = TestOutput {
+        text: String::new(),
+        styles: String::new(),
+    };
+    annots.render(1, 0, 0, &mut output);
 
     assert_eq!(
-        text,
+        output.text,
         indoc::indoc! {"
             1 │ 1234
               │  ^^ test 1
@@ -456,7 +488,7 @@ fn test_render_tab() {
         "},
     );
     assert_eq!(
-        styles,
+        output.styles,
         indoc::indoc! {"
             msmstaats
             ssmsslls111111s
@@ -474,19 +506,21 @@ fn test_render_line_break_lf_1() {
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(4..5, ANNOT_STYLE_1, vec![("test".into(), '1')]);
 
-    let rendered = annots.render(1, 0, 0);
-    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
-    let styles = gather_styles(&rendered);
+    let mut output = TestOutput {
+        text: String::new(),
+        styles: String::new(),
+    };
+    annots.render(1, 0, 0, &mut output);
 
     assert_eq!(
-        text,
+        output.text,
         indoc::indoc! {"
             1 │ 1234
               │     ^ test
         "},
     );
     assert_eq!(
-        styles,
+        output.styles,
         indoc::indoc! {"
             msmstttts
             ssmsssssls1111s
@@ -502,19 +536,21 @@ fn test_render_line_break_lf_2() {
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(3..5, ANNOT_STYLE_1, vec![("test".into(), '1')]);
 
-    let rendered = annots.render(1, 0, 0);
-    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
-    let styles = gather_styles(&rendered);
+    let mut output = TestOutput {
+        text: String::new(),
+        styles: String::new(),
+    };
+    annots.render(1, 0, 0, &mut output);
 
     assert_eq!(
-        text,
+        output.text,
         indoc::indoc! {"
             1 │ 1234
               │    ^^ test
         "},
     );
     assert_eq!(
-        styles,
+        output.styles,
         indoc::indoc! {"
             msmstttas
             ssmsssslls1111s
@@ -530,19 +566,21 @@ fn test_render_line_break_crlf_1() {
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(4..5, ANNOT_STYLE_1, vec![("test".into(), '1')]);
 
-    let rendered = annots.render(1, 0, 0);
-    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
-    let styles = gather_styles(&rendered);
+    let mut output = TestOutput {
+        text: String::new(),
+        styles: String::new(),
+    };
+    annots.render(1, 0, 0, &mut output);
 
     assert_eq!(
-        text,
+        output.text,
         indoc::indoc! {"
             1 │ 1234
               │     ^ test
         "},
     );
     assert_eq!(
-        styles,
+        output.styles,
         indoc::indoc! {"
             msmstttts
             ssmsssssls1111s
@@ -558,19 +596,21 @@ fn test_render_line_break_crlf_2() {
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(5..6, ANNOT_STYLE_1, vec![("test".into(), '1')]);
 
-    let rendered = annots.render(1, 0, 0);
-    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
-    let styles = gather_styles(&rendered);
+    let mut output = TestOutput {
+        text: String::new(),
+        styles: String::new(),
+    };
+    annots.render(1, 0, 0, &mut output);
 
     assert_eq!(
-        text,
+        output.text,
         indoc::indoc! {"
             1 │ 1234
               │     ^ test
         "},
     );
     assert_eq!(
-        styles,
+        output.styles,
         indoc::indoc! {"
             msmstttts
             ssmsssssls1111s
@@ -586,19 +626,21 @@ fn test_render_line_break_crlf_3() {
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(4..6, ANNOT_STYLE_1, vec![("test".into(), '1')]);
 
-    let rendered = annots.render(1, 0, 0);
-    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
-    let styles = gather_styles(&rendered);
+    let mut output = TestOutput {
+        text: String::new(),
+        styles: String::new(),
+    };
+    annots.render(1, 0, 0, &mut output);
 
     assert_eq!(
-        text,
+        output.text,
         indoc::indoc! {"
             1 │ 1234
               │     ^ test
         "},
     );
     assert_eq!(
-        styles,
+        output.styles,
         indoc::indoc! {"
             msmstttts
             ssmsssssls1111s
@@ -614,19 +656,21 @@ fn test_render_line_break_crlf_4() {
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(3..5, ANNOT_STYLE_1, vec![("test".into(), '1')]);
 
-    let rendered = annots.render(1, 0, 0);
-    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
-    let styles = gather_styles(&rendered);
+    let mut output = TestOutput {
+        text: String::new(),
+        styles: String::new(),
+    };
+    annots.render(1, 0, 0, &mut output);
 
     assert_eq!(
-        text,
+        output.text,
         indoc::indoc! {"
             1 │ 1234
               │    ^^ test
         "},
     );
     assert_eq!(
-        styles,
+        output.styles,
         indoc::indoc! {"
             msmstttas
             ssmsssslls1111s
@@ -642,19 +686,21 @@ fn test_render_line_break_crlf_5() {
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(3..6, ANNOT_STYLE_1, vec![("test".into(), '1')]);
 
-    let rendered = annots.render(1, 0, 0);
-    let text: String = rendered.iter().map(|(s, _)| s.as_str()).collect();
-    let styles = gather_styles(&rendered);
+    let mut output = TestOutput {
+        text: String::new(),
+        styles: String::new(),
+    };
+    annots.render(1, 0, 0, &mut output);
 
     assert_eq!(
-        text,
+        output.text,
         indoc::indoc! {"
             1 │ 1234
               │    ^^ test
         "},
     );
     assert_eq!(
-        styles,
+        output.styles,
         indoc::indoc! {"
             msmstttas
             ssmsssslls1111s

@@ -11,6 +11,10 @@ keywords = ["annotation", "code", "error", "report"]
 exclude = ["/.github", ".gitignore", "/ci"]
 publish = true
 
+[features]
+default = ["std"]
+std = []
+
 [dependencies]
 unicode-width = "0.2.2"
 

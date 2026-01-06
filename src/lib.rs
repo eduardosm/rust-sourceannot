@@ -78,19 +78,22 @@
 //!     vec![("this is a macro invocation".into(), Color::Red)],
 //! );
 //!
-//! // Render the snippet with annotations
+//! // Render the snippet with annotations. `PlainOutput` can write to any
+//! // `std::io::Write` ignoring colors. But you could use your favorite terminal
+//! // coloring library with a wrapper that implements the `Output` trait.
 //! let max_line_no_width = annotations.max_line_no_width();
-//! let rendered = annotations.render(max_line_no_width, 0, 0);
+//! annotations.render(
+//!     max_line_no_width,
+//!     0,
+//!     0,
+//!     sourceannot::PlainOutput(std::io::stderr().lock()),
+//! )
+//! .expect("failed to write to stderr");
 //!
-//! // `rendered` is a `Vec<(String, Color)>`, which you could print with
-//! // your favorite terminal coloring library. In this example, we will
-//! // ignore the colors.
+//! // You can also render to a string, which also ignores colors.
+//! let mut rendered = String::new();
+//! annotations.render(max_line_no_width, 0, 0, &mut rendered);
 //!
-//! for (chunk, _) in rendered.iter() {
-//!     eprint!("{chunk}");
-//! }
-//!
-//! # let rendered = rendered.iter().map(|(s, _)| s.as_str()).collect::<String>();
 //! # assert_eq!(
 //! #     rendered,
 //! #     indoc::indoc! {"
@@ -114,6 +117,8 @@
 //! ```
 
 extern crate alloc;
+#[cfg(feature = "std")]
+extern crate std;
 
 mod annots;
 mod range_set;
@@ -121,6 +126,92 @@ mod snippet;
 
 pub use annots::Annotations;
 pub use snippet::SourceSnippet;
+
+/// Trait that consumes a rendered annotated snippet.
+pub trait Output<M> {
+    type Error;
+
+    fn put_str(&mut self, text: &str, meta: &M) -> Result<(), Self::Error>;
+
+    fn put_char(&mut self, ch: char, meta: &M) -> Result<(), Self::Error> {
+        self.put_str(ch.encode_utf8(&mut [0; 4]), meta)
+    }
+
+    fn put_fmt(&mut self, args: core::fmt::Arguments<'_>, meta: &M) -> Result<(), Self::Error> {
+        struct Adapter<'a, M, O: ?Sized + Output<M>> {
+            output: &'a mut O,
+            meta: &'a M,
+            error: Option<O::Error>,
+        }
+
+        impl<'a, M, O: ?Sized + Output<M>> core::fmt::Write for Adapter<'a, M, O> {
+            fn write_str(&mut self, s: &str) -> core::fmt::Result {
+                self.output.put_str(s, self.meta).map_err(|e| {
+                    self.error = Some(e);
+                    core::fmt::Error
+                })
+            }
+        }
+
+        let mut writer = Adapter {
+            output: self,
+            meta,
+            error: None,
+        };
+        core::fmt::write(&mut writer, args)
+            .map_err(|_| {
+                writer
+                    .error
+                    .unwrap_or_else(|| {
+                        panic!("a formatting trait implementation returned an error when the underlying stream did not")
+                    })
+            })
+    }
+}
+
+/// Writing to a [`String`](alloc::string::String) ignores metadata.
+impl<M> Output<M> for &mut alloc::string::String {
+    type Error = core::convert::Infallible;
+
+    fn put_str(&mut self, text: &str, _meta: &M) -> Result<(), Self::Error> {
+        self.push_str(text);
+        Ok(())
+    }
+
+    fn put_char(&mut self, ch: char, _meta: &M) -> Result<(), Self::Error> {
+        self.push(ch);
+        Ok(())
+    }
+
+    fn put_fmt(&mut self, args: core::fmt::Arguments<'_>, _meta: &M) -> Result<(), Self::Error> {
+        core::fmt::write(self, args).unwrap();
+        Ok(())
+    }
+}
+
+/// An [`Output`] implementor that writes to any [`std::io::Write`] ignoring
+/// metadata.
+#[cfg(feature = "std")]
+pub struct PlainOutput<W: std::io::Write>(pub W);
+
+#[cfg(feature = "std")]
+impl<W: std::io::Write, M> Output<M> for PlainOutput<W> {
+    type Error = std::io::Error;
+
+    fn put_str(&mut self, text: &str, _meta: &M) -> Result<(), Self::Error> {
+        self.0.write_all(text.as_bytes())
+    }
+
+    fn put_char(&mut self, ch: char, _meta: &M) -> Result<(), Self::Error> {
+        let mut buf = [0; 4];
+        let s = ch.encode_utf8(&mut buf);
+        self.0.write_all(s.as_bytes())
+    }
+
+    fn put_fmt(&mut self, args: core::fmt::Arguments<'_>, _meta: &M) -> Result<(), Self::Error> {
+        self.0.write_fmt(args)
+    }
+}
 
 /// The general style of an annotated snippet.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
