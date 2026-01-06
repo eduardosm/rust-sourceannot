@@ -12,6 +12,8 @@ pub struct SourceSnippet {
     lines: Vec<SourceLine>,
     line_map: Vec<usize>,
     metas: Vec<SourceUnitMeta>,
+    large_widths: Vec<(usize, usize)>,
+    large_utf8_lens: Vec<(usize, usize)>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -46,11 +48,11 @@ impl SourceUnitMeta {
     }
 
     #[inline]
-    fn new(width: usize, utf8_len: usize) -> Self {
+    fn new(width: u8, utf8_len: u8) -> Self {
         assert!(width <= 0x7F);
         assert!(utf8_len <= 0x7F);
         Self {
-            inner: (width as u16) | ((utf8_len as u16) << 7),
+            inner: u16::from(width) | (u16::from(utf8_len) << 7),
         }
     }
 
@@ -60,13 +62,13 @@ impl SourceUnitMeta {
     }
 
     #[inline]
-    fn width(&self) -> usize {
-        usize::from(self.inner & 0x7F)
+    fn width(&self) -> u8 {
+        (self.inner & 0x7F) as u8
     }
 
     #[inline]
-    fn utf8_len(&self) -> usize {
-        usize::from((self.inner >> 7) & 0x7F)
+    fn utf8_len(&self) -> u8 {
+        ((self.inner >> 7) & 0x7F) as u8
     }
 }
 
@@ -91,12 +93,43 @@ impl SourceSnippet {
         } else {
             self.line_map[line - 1]
         };
-        let col = self.metas[line_start..pos]
-            .iter()
-            .map(SourceUnitMeta::width)
-            .sum();
+        let col = self.gather_width(line_start..pos);
 
         (line, col)
+    }
+
+    fn gather_utf8_len(&self, range: core::ops::Range<usize>) -> usize {
+        let mut utf8_len = 0;
+        for (i, meta) in self.metas[range.clone()].iter().enumerate() {
+            let len_i = meta.utf8_len();
+            if len_i == 0x7F {
+                let large_i = self
+                    .large_utf8_lens
+                    .binary_search_by_key(&(i + range.start), |&(j, _)| j)
+                    .unwrap();
+                utf8_len += self.large_utf8_lens[large_i].1;
+            } else {
+                utf8_len += usize::from(len_i);
+            }
+        }
+        utf8_len
+    }
+
+    fn gather_width(&self, range: core::ops::Range<usize>) -> usize {
+        let mut width = 0;
+        for (i, meta) in self.metas[range.clone()].iter().enumerate() {
+            let width_i = meta.width();
+            if width_i == 0x7F {
+                let large_i = self
+                    .large_widths
+                    .binary_search_by_key(&(i + range.start), |&(j, _)| j)
+                    .unwrap();
+                width += self.large_widths[large_i].1;
+            } else {
+                width += usize::from(width_i);
+            }
+        }
+        width
     }
 
     #[inline]
@@ -130,16 +163,12 @@ impl SourceSnippet {
         } else {
             self.line_map[start_line - 1]
         };
-        let mut start_col = 0;
-        let mut start_utf8 = 0;
-        for meta in self.metas[start_line_start..start].iter() {
-            start_col += meta.width();
-            start_utf8 += meta.utf8_len();
-        }
+        let start_col = self.gather_width(start_line_start..start);
+        let start_utf8 = self.gather_utf8_len(start_line_start..start);
 
         let end_line;
-        let mut end_col;
-        let mut end_utf8;
+        let end_col;
+        let end_utf8;
         if end == start {
             end_line = start_line;
             end_col = start_col;
@@ -154,12 +183,8 @@ impl SourceSnippet {
             } else {
                 self.line_map[end_line - 1]
             };
-            end_col = 0;
-            end_utf8 = 0;
-            for meta in self.metas[end_line_start..end].iter() {
-                end_col += meta.width();
-                end_utf8 += meta.utf8_len();
-            }
+            end_col = self.gather_width(end_line_start..end);
+            end_utf8 = self.gather_utf8_len(end_line_start..end);
         }
 
         SourceSpan {
@@ -188,6 +213,22 @@ mod tests {
         assert_eq!(snippet.get_line_col(4), (1, 0));
         assert_eq!(snippet.get_line_col(5), (1, 1));
         assert_eq!(snippet.get_line_col(6), (1, 2));
+    }
+
+    #[test]
+    fn test_get_line_col_large_meta() {
+        let snippet = SourceSnippet::build_from_utf8_ex(
+            0,
+            b"1\xFF2",
+            |_| unreachable!(),
+            |_| (true, "\u{A7}".repeat(150)),
+            false,
+        );
+
+        assert_eq!(snippet.get_line_col(0), (0, 0));
+        assert_eq!(snippet.get_line_col(1), (0, 1));
+        assert_eq!(snippet.get_line_col(2), (0, 151));
+        assert_eq!(snippet.get_line_col(3), (0, 152));
     }
 
     #[test]
@@ -468,6 +509,106 @@ mod tests {
                 end_line: 1,
                 end_col: 1,
                 end_utf8: 1,
+            },
+        );
+    }
+
+    #[test]
+    fn test_convert_span_large_meta() {
+        let snippet = SourceSnippet::build_from_utf8_ex(
+            0,
+            b"1\xFF2",
+            |_| unreachable!(),
+            |_| (true, "\u{A7}".repeat(150)),
+            false,
+        );
+
+        assert_eq!(
+            snippet.convert_span(0, 1),
+            SourceSpan {
+                start_line: 0,
+                start_col: 0,
+                start_utf8: 0,
+                end_line: 0,
+                end_col: 1,
+                end_utf8: 1,
+            },
+        );
+        assert_eq!(
+            snippet.convert_span(0, 2),
+            SourceSpan {
+                start_line: 0,
+                start_col: 0,
+                start_utf8: 0,
+                end_line: 0,
+                end_col: 151,
+                end_utf8: 301,
+            },
+        );
+        assert_eq!(
+            snippet.convert_span(0, 3),
+            SourceSpan {
+                start_line: 0,
+                start_col: 0,
+                start_utf8: 0,
+                end_line: 0,
+                end_col: 152,
+                end_utf8: 302,
+            },
+        );
+        assert_eq!(
+            snippet.convert_span(1, 2),
+            SourceSpan {
+                start_line: 0,
+                start_col: 1,
+                start_utf8: 1,
+                end_line: 0,
+                end_col: 151,
+                end_utf8: 301,
+            },
+        );
+        assert_eq!(
+            snippet.convert_span(1, 3),
+            SourceSpan {
+                start_line: 0,
+                start_col: 1,
+                start_utf8: 1,
+                end_line: 0,
+                end_col: 152,
+                end_utf8: 302,
+            },
+        );
+        assert_eq!(
+            snippet.convert_span(2, 3),
+            SourceSpan {
+                start_line: 0,
+                start_col: 151,
+                start_utf8: 301,
+                end_line: 0,
+                end_col: 152,
+                end_utf8: 302,
+            },
+        );
+        assert_eq!(
+            snippet.convert_span(2, 2),
+            SourceSpan {
+                start_line: 0,
+                start_col: 151,
+                start_utf8: 301,
+                end_line: 0,
+                end_col: 151,
+                end_utf8: 301,
+            },
+        );
+        assert_eq!(
+            snippet.convert_span(3, 3),
+            SourceSpan {
+                start_line: 0,
+                start_col: 152,
+                start_utf8: 302,
+                end_line: 0,
+                end_col: 152,
+                end_utf8: 302,
             },
         );
     }

@@ -70,7 +70,7 @@ mod tests {
     use crate::range_set::RangeSet;
     use crate::snippet::{SourceLine, SourceSnippet, SourceUnitMeta};
 
-    fn meta(width: usize, len: usize) -> SourceUnitMeta {
+    fn meta(width: u8, len: u8) -> SourceUnitMeta {
         SourceUnitMeta::new(width, len)
     }
 
@@ -84,7 +84,6 @@ mod tests {
         let snippet = SourceSnippet::build_from_latin1_ex(0, source, |_| unreachable!());
 
         assert_eq!(snippet.start_line, 0);
-        assert_eq!(snippet.lines.len(), 2);
         assert_eq!(
             snippet.lines,
             [
@@ -121,7 +120,6 @@ mod tests {
         let snippet = SourceSnippet::build_from_latin1_ex(0, source, |_| unreachable!());
 
         assert_eq!(snippet.start_line, 0);
-        assert_eq!(snippet.lines.len(), 3);
         assert_eq!(
             snippet.lines,
             [
@@ -164,7 +162,6 @@ mod tests {
         let snippet = SourceSnippet::build_from_latin1_ex(0, source, |_| unreachable!());
 
         assert_eq!(snippet.start_line, 0);
-        assert_eq!(snippet.lines.len(), 2);
         assert_eq!(
             snippet.lines,
             [
@@ -201,7 +198,6 @@ mod tests {
         let snippet = SourceSnippet::build_from_latin1(0, source, 4);
 
         assert_eq!(snippet.start_line, 0);
-        assert_eq!(snippet.lines.len(), 2);
         assert_eq!(
             snippet.lines,
             [
@@ -239,7 +235,6 @@ mod tests {
             SourceSnippet::build_from_latin1_ex(0, source, |chr| (true, format!("<{chr:02X}>")));
 
         assert_eq!(snippet.start_line, 0);
-        assert_eq!(snippet.lines.len(), 3);
         assert_eq!(
             snippet.lines,
             [
@@ -284,7 +279,6 @@ mod tests {
         let snippet = SourceSnippet::build_from_latin1(0, source, 4);
 
         assert_eq!(snippet.start_line, 0);
-        assert_eq!(snippet.lines.len(), 2);
         assert_eq!(
             snippet.lines,
             [
@@ -314,5 +308,26 @@ mod tests {
                 meta(1, 1),
             ],
         );
+    }
+
+    #[test]
+    fn test_large_meta() {
+        let source = b"1\x002";
+        let snippet =
+            SourceSnippet::build_from_latin1_ex(0, source, |_| (true, "\u{A7}".repeat(150)));
+
+        assert_eq!(snippet.start_line, 0);
+        assert_eq!(
+            snippet.lines,
+            [SourceLine {
+                text: format!("1{}2", "\u{A7}".repeat(150)).into_boxed_str(),
+                alts: RangeSet::from(1..=300),
+                width: 152,
+            }],
+        );
+        assert_eq!(snippet.line_map, []);
+        assert_eq!(snippet.metas, [meta(1, 1), meta(0x7F, 0x7F), meta(1, 1)]);
+        assert_eq!(snippet.large_widths, [(1, 150)]);
+        assert_eq!(snippet.large_utf8_lens, [(1, 300)]);
     }
 }
