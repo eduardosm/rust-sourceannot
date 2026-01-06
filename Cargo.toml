@@ -1,6 +1,6 @@
 [package]
 name = "sourceannot"
-version = "0.2.1"
+version = "0.3.0-pre"
 authors = ["Eduardo Sánchez Muñoz <eduardosm-dev@e64.io>"]
 edition = "2024"
 rust-version = "1.85"
@@ -9,7 +9,7 @@ repository = "https://github.com/eduardosm/rust-sourceannot"
 license = "MIT OR Apache-2.0"
 keywords = ["annotation", "code", "error", "report"]
 exclude = ["/.github", ".gitignore", "/ci"]
-publish = true
+publish = false
 
 [features]
 default = ["std"]
