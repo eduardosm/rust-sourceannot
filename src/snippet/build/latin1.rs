@@ -28,6 +28,9 @@ impl SourceSnippet {
     /// `on_control` is used to handle control characters (that are not line
     /// breaks). `on_control` also returns a boolean to indicate if the text
     /// should be rendered as alternative.
+    ///
+    /// `on_control` should not return a string that contains tabs, line breaks
+    /// or any other control characters.
     pub fn build_from_latin1_ex<FnCtrl>(
         start_line: usize,
         source: &[u8],
