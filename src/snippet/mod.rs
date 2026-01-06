@@ -20,7 +20,6 @@ pub struct SourceSnippet {
 pub(crate) struct SourceLine {
     pub(crate) text: Box<str>,
     pub(crate) alts: RangeSet<usize>,
-    width: usize,
 }
 
 #[derive(Clone, PartialEq, Eq)]

@@ -16,7 +16,6 @@ struct SourceSnippetBuilder {
     large_utf8_lens: Vec<(usize, usize)>,
     current_line_text: String,
     current_line_alts: RangeSet<usize>,
-    current_line_width: usize,
 }
 
 impl SourceSnippetBuilder {
@@ -30,7 +29,6 @@ impl SourceSnippetBuilder {
             large_utf8_lens: Vec::new(),
             current_line_text: String::new(),
             current_line_alts: RangeSet::new(),
-            current_line_width: 0,
         }
     }
 
@@ -38,7 +36,6 @@ impl SourceSnippetBuilder {
         self.lines.push(SourceLine {
             text: self.current_line_text.into_boxed_str(),
             alts: self.current_line_alts,
-            width: self.current_line_width,
         });
 
         SourceSnippet {
@@ -55,7 +52,6 @@ impl SourceSnippetBuilder {
         self.lines.push(SourceLine {
             text: core::mem::take(&mut self.current_line_text).into_boxed_str(),
             alts: core::mem::take(&mut self.current_line_alts),
-            width: core::mem::replace(&mut self.current_line_width, 0),
         });
         if orig_len != 0 {
             self.push_meta(orig_len, 1, 0);
@@ -74,7 +70,6 @@ impl SourceSnippetBuilder {
         }
 
         let width = unicode_width::UnicodeWidthStr::width(text);
-        self.current_line_width += width;
 
         self.push_meta(orig_len, width, text.len());
     }
@@ -83,7 +78,6 @@ impl SourceSnippetBuilder {
         let old_line_len = self.current_line_text.len();
         self.current_line_text.push(chr);
         let new_line_len = self.current_line_text.len();
-        self.current_line_width += width;
 
         if alt {
             self.current_line_alts
