@@ -218,9 +218,7 @@ impl<'a, M> Annotations<'a, M> {
             0
         }
     }
-}
 
-impl<M: Clone> Annotations<'_, M> {
     /// Renders the snippet with the annotations.
     ///
     /// `max_line_no_width` should be at least
@@ -467,12 +465,12 @@ impl<M: Clone> Annotations<'_, M> {
                         self.annots[annot_i].style.caret
                     };
                     let style = if annot_i == usize::MAX {
-                        self.main_style.spaces_meta.clone()
+                        &self.main_style.spaces_meta
                     } else {
-                        self.annots[annot_i].style.line_meta.clone()
+                        &self.annots[annot_i].style.line_meta
                     };
                     for _ in 0..len {
-                        out.put_char(chr, &style)?;
+                        out.put_char(chr, style)?;
                     }
                     i += len;
                 }

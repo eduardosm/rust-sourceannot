@@ -16,6 +16,10 @@
   and `SourceSnippet::build_from_latin1_ex`) to return strings with a UTF-8 length
   larger than 127 bytes or a width larger than 127.
 
+### Changed
+
+- `Annotations::render()` does not require `M: Clone` anymore.
+
 ### Other
 
 - Minimum Supported Rust Version (MSRV) has been bumped to 1.75.
