@@ -10,16 +10,88 @@ use crate::{AnnotStyle, MainStyle, Output, SourceSnippet};
 pub struct Annotations<'a, M> {
     snippet: &'a SourceSnippet,
     main_style: MainStyle<M>,
-    annots: Vec<AnnotData<M>>,
+    annots: Vec<Annotation<M>>,
+    max_pos: usize,
+}
+
+#[derive(Debug)]
+struct Annotation<M> {
+    span: core::ops::Range<usize>,
+    style: AnnotStyle<M>,
+    label: Vec<(String, M)>,
+}
+
+impl<'a, M> Annotations<'a, M> {
+    pub fn new(snippet: &'a SourceSnippet, main_style: MainStyle<M>) -> Self {
+        Self {
+            snippet,
+            main_style,
+            annots: Vec::new(),
+            max_pos: 0,
+        }
+    }
+
+    pub fn add_annotation(
+        &mut self,
+        span: core::ops::Range<usize>,
+        style: AnnotStyle<M>,
+        label: Vec<(String, M)>,
+    ) {
+        self.max_pos = self.max_pos.max(span.end);
+        self.annots.push(Annotation { span, style, label });
+    }
+
+    pub fn max_line_no_width(&self) -> usize {
+        let (max_line_i, _) = self.snippet.get_line_col(self.max_pos);
+        let max_line_no = max_line_i + self.snippet.start_line();
+        (max_line_no.max(1).ilog10() + 1) as usize
+    }
+
+    /// Renders the snippet with the annotations.
+    ///
+    /// `max_line_no_width` should be at least
+    /// [`self.max_line_no_width()`](Self::max_line_no_width), but
+    /// it can be greater to align the margin of multiple snippets.
+    pub fn render<O: Output<M>>(
+        &self,
+        max_line_no_width: usize,
+        max_fill_after_first: usize,
+        max_fill_before_last: usize,
+        out: O,
+    ) -> Result<(), O::Error> {
+        let pre_proc = self.pre_process();
+        pre_proc.render(
+            max_line_no_width,
+            max_fill_after_first,
+            max_fill_before_last,
+            out,
+        )
+    }
+
+    fn pre_process(&'a self) -> PreProcAnnots<'a, M> {
+        let mut pre_proc = PreProcAnnots::new(self.snippet, &self.main_style);
+        for annot in self.annots.iter() {
+            pre_proc.add_annotation(annot.span.clone(), &annot.style, &annot.label);
+        }
+        pre_proc
+    }
+}
+
+/// A collection of annotations for a source snippet.
+#[derive(Debug)]
+struct PreProcAnnots<'a, M> {
+    snippet: &'a SourceSnippet,
+    main_style: &'a MainStyle<M>,
+    annots: Vec<PreProcAnnot<'a, M>>,
     lines: BTreeMap<usize, LineData>,
     num_ml_slots: usize,
 }
 
 #[derive(Debug)]
-struct AnnotData<M> {
-    style: AnnotStyle<M>,
+struct PreProcAnnot<'a, M> {
+    style: &'a AnnotStyle<M>,
     span: SourceSpan,
-    label: Vec<(String, M)>,
+    label: &'a [(String, M)],
     sl_overlaps: bool,
     ml_slot: usize,
 }
@@ -35,8 +107,8 @@ struct LineData {
     styles: Vec<(usize, bool)>,
 }
 
-impl<'a, M> Annotations<'a, M> {
-    pub fn new(snippet: &'a SourceSnippet, main_style: MainStyle<M>) -> Self {
+impl<'a, M> PreProcAnnots<'a, M> {
+    fn new(snippet: &'a SourceSnippet, main_style: &'a MainStyle<M>) -> Self {
         Self {
             snippet,
             main_style,
@@ -46,13 +118,13 @@ impl<'a, M> Annotations<'a, M> {
         }
     }
 
-    pub fn add_annotation(
+    fn add_annotation(
         &mut self,
         span: core::ops::Range<usize>,
-        style: AnnotStyle<M>,
-        label: Vec<(String, M)>,
+        style: &'a AnnotStyle<M>,
+        label: &'a [(String, M)],
     ) {
-        let mut annot = AnnotData {
+        let mut annot = PreProcAnnot {
             style,
             span: self.snippet.convert_span(span.start, span.end),
             label,
@@ -181,8 +253,8 @@ impl<'a, M> Annotations<'a, M> {
     }
 
     fn insert_annot_sorted(
-        annots: &[AnnotData<M>],
-        annot: &AnnotData<M>,
+        annots: &[PreProcAnnot<'_, M>],
+        annot: &PreProcAnnot<'_, M>,
         annot_i: usize,
         dest: &mut Vec<usize>,
     ) {
@@ -210,21 +282,7 @@ impl<'a, M> Annotations<'a, M> {
         }
     }
 
-    pub fn max_line_no_width(&self) -> usize {
-        if let Some((max_line_i, _)) = self.lines.last_key_value() {
-            let max_line_no = max_line_i + self.snippet.start_line();
-            (max_line_no.max(1).ilog10() + 1) as usize
-        } else {
-            0
-        }
-    }
-
-    /// Renders the snippet with the annotations.
-    ///
-    /// `max_line_no_width` should be at least
-    /// [`self.max_line_no_width()`](Self::max_line_no_width), but
-    /// it can be greater to align the margin of multiple snippets.
-    pub fn render<O: Output<M>>(
+    fn render<O: Output<M>>(
         &self,
         max_line_no_width: usize,
         max_fill_after_first: usize,
