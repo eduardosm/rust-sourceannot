@@ -72,7 +72,8 @@ fn test_render_single_line_1() {
         text: String::new(),
         styles: String::new(),
     };
-    annots.render(1, 0, 0, &mut output);
+    let max_line_no_width = annots.max_line_no_width();
+    annots.render(max_line_no_width, 0, 0, &mut output);
 
     assert_eq!(
         output.text,
@@ -103,7 +104,8 @@ fn test_render_single_line_2() {
         text: String::new(),
         styles: String::new(),
     };
-    annots.render(1, 0, 0, &mut output);
+    let max_line_no_width = annots.max_line_no_width();
+    annots.render(max_line_no_width, 0, 0, &mut output);
 
     assert_eq!(
         output.text,
@@ -140,7 +142,8 @@ fn test_render_single_line_3() {
         text: String::new(),
         styles: String::new(),
     };
-    annots.render(1, 0, 0, &mut output);
+    let max_line_no_width = annots.max_line_no_width();
+    annots.render(max_line_no_width, 0, 0, &mut output);
 
     assert_eq!(
         output.text,
@@ -175,7 +178,8 @@ fn test_render_single_line_4() {
         text: String::new(),
         styles: String::new(),
     };
-    annots.render(1, 0, 0, &mut output);
+    let max_line_no_width = annots.max_line_no_width();
+    annots.render(max_line_no_width, 0, 0, &mut output);
 
     assert_eq!(
         output.text,
@@ -211,7 +215,8 @@ fn test_render_multi_line_1() {
         text: String::new(),
         styles: String::new(),
     };
-    annots.render(1, 0, 0, &mut output);
+    let max_line_no_width = annots.max_line_no_width();
+    annots.render(max_line_no_width, 0, 0, &mut output);
 
     assert_eq!(
         output.text,
@@ -248,7 +253,8 @@ fn test_render_multi_line_2() {
         text: String::new(),
         styles: String::new(),
     };
-    annots.render(1, 0, 0, &mut output);
+    let max_line_no_width = annots.max_line_no_width();
+    annots.render(max_line_no_width, 0, 0, &mut output);
 
     assert_eq!(
         output.text,
@@ -289,7 +295,8 @@ fn test_render_multi_line_3() {
         text: String::new(),
         styles: String::new(),
     };
-    annots.render(1, 0, 0, &mut output);
+    let max_line_no_width = annots.max_line_no_width();
+    annots.render(max_line_no_width, 0, 0, &mut output);
 
     assert_eq!(
         output.text,
@@ -330,7 +337,8 @@ fn test_render_multi_line_4() {
         text: String::new(),
         styles: String::new(),
     };
-    annots.render(1, 0, 0, &mut output);
+    let max_line_no_width = annots.max_line_no_width();
+    annots.render(max_line_no_width, 0, 0, &mut output);
 
     assert_eq!(
         output.text,
@@ -370,7 +378,8 @@ fn test_render_multi_line_crlf() {
         text: String::new(),
         styles: String::new(),
     };
-    annots.render(1, 0, 0, &mut output);
+    let max_line_no_width = annots.max_line_no_width();
+    annots.render(max_line_no_width, 0, 0, &mut output);
 
     assert_eq!(
         output.text,
@@ -407,7 +416,8 @@ fn test_render_single_line_within_multi_line() {
         text: String::new(),
         styles: String::new(),
     };
-    annots.render(1, 0, 0, &mut output);
+    let max_line_no_width = annots.max_line_no_width();
+    annots.render(max_line_no_width, 0, 0, &mut output);
 
     assert_eq!(
         output.text,
@@ -445,7 +455,8 @@ fn test_render_zero_len_span() {
         text: String::new(),
         styles: String::new(),
     };
-    annots.render(1, 0, 0, &mut output);
+    let max_line_no_width = annots.max_line_no_width();
+    annots.render(max_line_no_width, 0, 0, &mut output);
 
     assert_eq!(
         output.text,
@@ -476,7 +487,8 @@ fn test_render_tab() {
         text: String::new(),
         styles: String::new(),
     };
-    annots.render(1, 0, 0, &mut output);
+    let max_line_no_width = annots.max_line_no_width();
+    annots.render(max_line_no_width, 0, 0, &mut output);
 
     assert_eq!(
         output.text,
@@ -510,7 +522,8 @@ fn test_render_line_break_lf_1() {
         text: String::new(),
         styles: String::new(),
     };
-    annots.render(1, 0, 0, &mut output);
+    let max_line_no_width = annots.max_line_no_width();
+    annots.render(max_line_no_width, 0, 0, &mut output);
 
     assert_eq!(
         output.text,
@@ -540,7 +553,8 @@ fn test_render_line_break_lf_2() {
         text: String::new(),
         styles: String::new(),
     };
-    annots.render(1, 0, 0, &mut output);
+    let max_line_no_width = annots.max_line_no_width();
+    annots.render(max_line_no_width, 0, 0, &mut output);
 
     assert_eq!(
         output.text,
@@ -570,7 +584,8 @@ fn test_render_line_break_crlf_1() {
         text: String::new(),
         styles: String::new(),
     };
-    annots.render(1, 0, 0, &mut output);
+    let max_line_no_width = annots.max_line_no_width();
+    annots.render(max_line_no_width, 0, 0, &mut output);
 
     assert_eq!(
         output.text,
@@ -600,7 +615,8 @@ fn test_render_line_break_crlf_2() {
         text: String::new(),
         styles: String::new(),
     };
-    annots.render(1, 0, 0, &mut output);
+    let max_line_no_width = annots.max_line_no_width();
+    annots.render(max_line_no_width, 0, 0, &mut output);
 
     assert_eq!(
         output.text,
@@ -630,7 +646,8 @@ fn test_render_line_break_crlf_3() {
         text: String::new(),
         styles: String::new(),
     };
-    annots.render(1, 0, 0, &mut output);
+    let max_line_no_width = annots.max_line_no_width();
+    annots.render(max_line_no_width, 0, 0, &mut output);
 
     assert_eq!(
         output.text,
@@ -660,7 +677,8 @@ fn test_render_line_break_crlf_4() {
         text: String::new(),
         styles: String::new(),
     };
-    annots.render(1, 0, 0, &mut output);
+    let max_line_no_width = annots.max_line_no_width();
+    annots.render(max_line_no_width, 0, 0, &mut output);
 
     assert_eq!(
         output.text,
@@ -690,7 +708,8 @@ fn test_render_line_break_crlf_5() {
         text: String::new(),
         styles: String::new(),
     };
-    annots.render(1, 0, 0, &mut output);
+    let max_line_no_width = annots.max_line_no_width();
+    annots.render(max_line_no_width, 0, 0, &mut output);
 
     assert_eq!(
         output.text,
@@ -704,6 +723,44 @@ fn test_render_line_break_crlf_5() {
         indoc::indoc! {"
             msmstttas
             ssmsssslls1111s
+        "},
+    );
+}
+
+#[test]
+fn test_render_line_numbers() {
+    let source = "1234\n5678\n90ab\ncdef\n";
+    let snippet = SourceSnippet::build_from_utf8(99, source.as_bytes(), 4);
+
+    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
+    annots.add_annotation(1..4, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(10..12, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+
+    let mut output = TestOutput {
+        text: String::new(),
+        styles: String::new(),
+    };
+    let max_line_no_width = annots.max_line_no_width();
+    annots.render(max_line_no_width, 0, 0, &mut output);
+
+    assert_eq!(
+        output.text,
+        indoc::indoc! {"
+             99 │ 1234
+                │  ^^^ test 1
+                · 
+            101 │ 90ab
+                │ -- test 2
+        "},
+    );
+    assert_eq!(
+        output.styles,
+        indoc::indoc! {"
+            smmsmstaaas
+            ssssmssllls111111s
+            ssssmss
+            mmmsmsbbtts
+            ssssmsLLs222222s
         "},
     );
 }

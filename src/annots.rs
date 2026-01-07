@@ -304,10 +304,11 @@ impl<'a, M> PreProcAnnots<'a, M> {
                 if let Some(line_i) = line_i {
                     let line_no = line_i + start_line;
                     let line_no_width = (line_no.max(1).ilog10() + 1) as usize;
-                    out.put_fmt(format_args!("{line_no}"), &margin_style.meta)?;
-                    for _ in 0..(max_line_no_width - line_no_width + 1) {
+                    for _ in 0..(max_line_no_width - line_no_width) {
                         out.put_char(' ', &self.main_style.spaces_meta)?;
                     }
+                    out.put_fmt(format_args!("{line_no}"), &margin_style.meta)?;
+                    out.put_char(' ', &self.main_style.spaces_meta)?;
                 } else {
                     for _ in 0..(max_line_no_width + 1) {
                         out.put_char(' ', &self.main_style.spaces_meta)?;
