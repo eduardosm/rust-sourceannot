@@ -8,6 +8,7 @@
   returning a `Vec`.
 - `SourceSnippet` has been renamed to `Snippet`.
 - `SnippetBuilder` has been added to build custom `Snippet`s.
+- `Snippet::get_line_col()` has been removed.
 - A new `std` feature, which depends on libstd has been enabled. Default features
   need to be disabled to support `no_std`.
 
