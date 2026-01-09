@@ -1,9 +1,29 @@
 use super::{ControlCharStyle, Snippet};
 
 impl Snippet {
-    /// Creates a snippet from a Latin-1 (ISO 8859-1) source.
+    /// Creates a [`Snippet`] from a Latin-1 (ISO 8859-1) source.
     ///
-    /// "\n" and "\r\n" are treated as line breaks.
+    /// This builder interprets each byte of `source` as a Unicode scalar value
+    /// in the range U+0000 to U+00FF.
+    ///
+    /// # Source units and spans
+    ///
+    /// The *source unit* for this builder is a **byte** of the original `source`.
+    /// Any annotation span you pass later (a `Range<usize>`) is interpreted as
+    /// byte offsets into this original `source` slice.
+    ///
+    /// # Line breaks
+    ///
+    /// - `\n` and `\r\n` are treated as line breaks.
+    /// - A lone `\r` is *not* a line break; it is handled like any other control
+    ///   character.
+    ///
+    /// # Control characters
+    ///
+    /// Tabs (`\t`) are expanded to `tab_width` spaces. Other control characters
+    /// are rendered according to `control_char_style` (see [`ControlCharStyle`]).
+    /// If `control_char_alt` is `true`, those replacement fragments are marked as
+    /// "alternate" text.
     pub fn build_from_latin1(
         start_line: usize,
         source: &[u8],

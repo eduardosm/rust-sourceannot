@@ -9,7 +9,29 @@ mod utf8;
 
 pub use utf8::InvalidUtf8SeqStyle;
 
-/// A snippet of source code.
+/// A snippet of source code prepared for annotated rendering.
+///
+/// # Source units and spans
+///
+/// Annotation spans are `Range<usize>` indices into the snippet's *source unit*
+/// sequence. The exact meaning of a "unit" depends on how you create the
+/// snippet:
+///
+/// - [`Snippet::build_from_utf8()`] and [`Snippet::build_from_latin1()`] treat a
+///   unit as a **byte** in the original byte sequence. In the UTF-8 case, a valid
+///   printable character may correspond to 1 to 4 source units.
+/// - [`Snippet::builder()`] allows units to be defined by the caller.
+///
+/// Because the snippet may render replacements (expanded tabs, control-picture
+/// glyphs, `<XX>` escapes, etc.), source-unit indices are *not* indices into the
+/// final rendered UTF-8 text. The snippet keeps the necessary mapping so spans
+/// still line up with what is shown.
+///
+/// # Alternate text
+///
+/// Some rendered fragments can be marked as "alternate" (for example, a
+/// control-character replacement). Renderers can use this to present those
+/// fragments differently (e.g., highlight them).
 #[derive(Clone, Debug)]
 pub struct Snippet {
     start_line: usize,
@@ -86,6 +108,13 @@ pub(crate) struct SourceSpan {
 }
 
 impl Snippet {
+    /// Creates a builder for manually constructing a snippet.
+    ///
+    /// `start_line` is the line number to associate with the first rendered
+    /// line of the snippet. This is typically 1 when the snippet corresponds
+    /// to a whole source file.
+    ///
+    /// See [`SnippetBuilder`] for details on how to use the builder.
     pub fn builder(start_line: usize) -> SnippetBuilder {
         SnippetBuilder::new(start_line)
     }
@@ -221,6 +250,65 @@ pub enum ControlCharStyle {
     Hexadecimal,
 }
 
+/// Incrementally constructs a [`Snippet`].
+///
+/// This type is the low-level building block that allows to create snippets in
+/// a custom way, with more flexibility than the convenience methods of [`Snippet`].
+///
+/// Every time you push something into the builder you must tell it how many
+/// *source units* that rendered fragment corresponds to. That is the `orig_len`
+/// parameter accepted by [`next_line()`](SnippetBuilder::next_line) and the
+/// `push_*` methods.
+///
+/// If you want a fragment to be addressable individually by a span, push it
+/// with its own `push_*` call. For example, if you call
+/// `push_str("abc", 3, false)`, any span that covers any of those three units
+/// will cover the entire rendered `"abc"` fragment.
+///
+/// Most `push_*` methods also accept an `alt` flag. When `alt` is `true`, the
+/// UTF-8 byte range appended to the current line is recorded as "alternate"
+/// text. This is intended for replacement/escaped representations (for example,
+/// `<XX>` escapes for control characters or invalid bytes) so it can be
+/// rendered differently (e.g., highlighted).
+///
+/// # Example
+///
+/// ```
+/// /// Builds a snippet from ASCII source bytes.
+/// ///
+/// /// `"\n"` and `"\r\n"` are treated as line breaks and tabs are expanded to
+/// /// 4 spaces. Control and non-ASCII characters are represented as `<XX>`.
+/// fn build_ascii_snippet(source: &[u8]) -> sourceannot::Snippet {
+///     let mut builder = sourceannot::Snippet::builder(1);
+///     let mut rest = source;
+///     while let Some((&byte, new_rest)) = rest.split_first() {
+///         rest = new_rest;
+///         if byte == b'\n' {
+///             // `"\n"` line break
+///             builder.next_line(1);
+///         } else if byte == b'\r' {
+///             if let Some(new_rest) = rest.strip_prefix(b"\n") {
+///                 // `"\r\n"` line break
+///                 rest = new_rest;
+///                 builder.next_line(2);
+///             } else {
+///                 // Lone `"\r"`, treat as a control character
+///                 builder.push_str("<0D>", 1, true);
+///             }
+///         } else if byte == b'\t' {
+///             // Tab as 4 spaces
+///             builder.push_spaces(4, 1, false);
+///         } else if matches!(byte, b' '..=b'~') {
+///             // Printable ASCII
+///             builder.push_char(byte.into(), 1, false);
+///         } else {
+///             // Control or non-ASCII
+///             builder.push_fmt(format_args!("<{byte:02X}>"), 1, true);
+///         }
+///     }
+///     builder.finish()
+/// }
+/// ```
 pub struct SnippetBuilder {
     start_line: usize,
     lines: Vec<SnippetLine>,
@@ -246,6 +334,7 @@ impl SnippetBuilder {
         }
     }
 
+    /// Finalizes the builder and returns the constructed [`Snippet`].
     pub fn finish(mut self) -> Snippet {
         self.lines.push(SnippetLine {
             text: self.current_line_text.into_boxed_str(),
@@ -262,6 +351,10 @@ impl SnippetBuilder {
         }
     }
 
+    /// Ends the current line and starts a new one.
+    ///
+    /// `orig_len` is the number of *source units* consumed by the line break.
+    /// For example, it can be `1` for `"\n"` or `2` for `"\r\n"`.
     pub fn next_line(&mut self, orig_len: usize) {
         self.lines.push(SnippetLine {
             text: core::mem::take(&mut self.current_line_text).into_boxed_str(),
@@ -271,10 +364,15 @@ impl SnippetBuilder {
         self.line_map.push(self.metas.len());
     }
 
+    /// Consumes `orig_len` source units without producing any rendered text.
+    ///
+    /// This is useful when you need to "eat" units that should not be visible
+    /// in the output but still need to be span-addressable.
     pub fn push_empty(&mut self, orig_len: usize) {
         self.push_meta(orig_len, 0, 0);
     }
 
+    /// Appends `text` to the current line.
     pub fn push_str(&mut self, text: &str, orig_len: usize, alt: bool) {
         let old_line_len = self.current_line_text.len();
         self.current_line_text.push_str(text);
@@ -288,6 +386,7 @@ impl SnippetBuilder {
         self.push_meta(orig_len, string_width(text), text.len());
     }
 
+    /// Appends a single character to the current line.
     pub fn push_char(&mut self, chr: char, orig_len: usize, alt: bool) {
         let old_line_len = self.current_line_text.len();
         self.current_line_text.push(chr);
@@ -301,6 +400,7 @@ impl SnippetBuilder {
         self.push_meta(orig_len, char_width(chr), chr.len_utf8());
     }
 
+    /// Appends `width` ASCII spaces to the current line.
     pub fn push_spaces(&mut self, width: usize, orig_len: usize, alt: bool) {
         let old_line_len = self.current_line_text.len();
         let spaces = "                ";
@@ -320,6 +420,7 @@ impl SnippetBuilder {
         self.push_meta(orig_len, width, width);
     }
 
+    /// Writes formatted text to the current line.
     pub fn push_fmt(&mut self, args: core::fmt::Arguments<'_>, orig_len: usize, alt: bool) {
         let old_line_len = self.current_line_text.len();
         core::fmt::write(&mut self.current_line_text, args)
@@ -423,10 +524,10 @@ impl SnippetBuilder {
         };
         self.metas.push(UnitMeta::new(meta_width, meta_utf8_len));
         for _ in 1..orig_len {
-            // Each element of `self.metas` corresponds to a byte or unit in the
-            // original source, so fill with "extras" for multi-unit chunks  (for
-            // example, a multi-byte UTF-8 character, a multi-byte invalid UTF-8
-            // sequence or a CRLF line break).
+            // Each element of `self.metas` corresponds to a unit in the original
+            // source, so fill with "extras" for multi-unit chunks (for example, a
+            // multi-byte UTF-8 character, a multi-byte invalid UTF-8 sequence or
+            // a CRLF line break).
             self.metas.push(UnitMeta::extra());
         }
     }
