@@ -1,9 +1,11 @@
 use alloc::boxed::Box;
+use alloc::string::String;
 use alloc::vec::Vec;
 
-mod build;
-
 use crate::range_set::RangeSet;
+
+mod latin1;
+mod utf8;
 
 /// A snippet of source code.
 #[derive(Clone, Debug)]
@@ -82,6 +84,10 @@ pub(crate) struct SourceSpan {
 }
 
 impl Snippet {
+    pub fn builder(start_line: usize) -> SnippetBuilder {
+        SnippetBuilder::new(start_line)
+    }
+
     pub fn get_line_col(&self, pos: usize) -> (usize, usize) {
         let line = match self.line_map.binary_search(&pos) {
             Ok(i) => i + 1,
@@ -195,6 +201,133 @@ impl Snippet {
             end_utf8,
         }
     }
+}
+
+pub struct SnippetBuilder {
+    start_line: usize,
+    lines: Vec<SnippetLine>,
+    line_map: Vec<usize>,
+    metas: Vec<UnitMeta>,
+    large_widths: Vec<(usize, usize)>,
+    large_utf8_lens: Vec<(usize, usize)>,
+    current_line_text: String,
+    current_line_alts: RangeSet<usize>,
+}
+
+impl SnippetBuilder {
+    fn new(start_line: usize) -> Self {
+        Self {
+            start_line,
+            lines: Vec::new(),
+            line_map: Vec::new(),
+            metas: Vec::new(),
+            large_widths: Vec::new(),
+            large_utf8_lens: Vec::new(),
+            current_line_text: String::new(),
+            current_line_alts: RangeSet::new(),
+        }
+    }
+
+    pub fn finish(mut self) -> Snippet {
+        self.lines.push(SnippetLine {
+            text: self.current_line_text.into_boxed_str(),
+            alts: self.current_line_alts,
+        });
+
+        Snippet {
+            start_line: self.start_line,
+            lines: self.lines,
+            line_map: self.line_map,
+            metas: self.metas,
+            large_widths: self.large_widths,
+            large_utf8_lens: self.large_utf8_lens,
+        }
+    }
+
+    pub fn next_line(&mut self, orig_len: usize) {
+        self.lines.push(SnippetLine {
+            text: core::mem::take(&mut self.current_line_text).into_boxed_str(),
+            alts: core::mem::take(&mut self.current_line_alts),
+        });
+        self.push_meta(orig_len, 1, 0);
+        self.line_map.push(self.metas.len());
+    }
+
+    pub fn push_str(&mut self, text: &str, orig_len: usize, alt: bool) {
+        let old_line_len = self.current_line_text.len();
+        self.current_line_text.push_str(text);
+        let new_line_len = self.current_line_text.len();
+
+        if alt && !text.is_empty() {
+            self.current_line_alts
+                .insert(old_line_len..=(new_line_len - 1));
+        }
+
+        self.push_meta(orig_len, string_width(text), text.len());
+    }
+
+    pub fn push_char(&mut self, chr: char, orig_len: usize, alt: bool) {
+        let old_line_len = self.current_line_text.len();
+        self.current_line_text.push(chr);
+        let new_line_len = self.current_line_text.len();
+
+        if alt {
+            self.current_line_alts
+                .insert(old_line_len..=(new_line_len - 1));
+        }
+
+        self.push_meta(orig_len, char_width(chr), chr.len_utf8());
+    }
+
+    pub fn push_fmt(&mut self, args: core::fmt::Arguments<'_>, orig_len: usize, alt: bool) {
+        let old_line_len = self.current_line_text.len();
+        core::fmt::write(&mut self.current_line_text, args)
+            .expect("a format implementation returned an error unexpectedly");
+        let new_line_len = self.current_line_text.len();
+
+        if alt && new_line_len > old_line_len {
+            self.current_line_alts
+                .insert(old_line_len..=(new_line_len - 1));
+        }
+
+        let new_text = &self.current_line_text[old_line_len..new_line_len];
+        self.push_meta(orig_len, string_width(new_text), new_text.len());
+    }
+
+    fn push_meta(&mut self, orig_len: usize, width: usize, utf8_len: usize) {
+        if orig_len == 0 {
+            return;
+        }
+
+        let meta_width = if width >= 0x7F {
+            self.large_widths.push((self.metas.len(), width));
+            0x7F
+        } else {
+            width as u8
+        };
+        let meta_utf8_len = if utf8_len >= 0x7F {
+            self.large_utf8_lens.push((self.metas.len(), utf8_len));
+            0x7F
+        } else {
+            utf8_len as u8
+        };
+        self.metas.push(UnitMeta::new(meta_width, meta_utf8_len));
+        for _ in 1..orig_len {
+            // Each element of `self.metas` corresponds to a byte or unit in the
+            // original source, so fill with "extras" for multi-unit chunks  (for
+            // example, a multi-byte UTF-8 character, a multi-byte invalid UTF-8
+            // sequence or a CRLF line break).
+            self.metas.push(UnitMeta::extra());
+        }
+    }
+}
+
+fn string_width(s: &str) -> usize {
+    s.chars().map(char_width).sum()
+}
+
+fn char_width(ch: char) -> usize {
+    unicode_width::UnicodeWidthChar::width(ch).unwrap_or(1)
 }
 
 #[cfg(test)]

@@ -1,8 +1,7 @@
 use alloc::format;
 use alloc::string::String;
 
-use super::SourceSnippetBuilder;
-use crate::Snippet;
+use super::Snippet;
 
 impl Snippet {
     /// Creates a snippet from a UTF-8 (possibly broken) source.
@@ -61,7 +60,7 @@ impl Snippet {
         FnCtrl: FnMut(char) -> (bool, String),
         FnInv: FnMut(&[u8]) -> (bool, String),
     {
-        let mut snippet = SourceSnippetBuilder::new(start_line);
+        let mut snippet = Snippet::builder(start_line);
 
         for source_chunk in source.utf8_chunks() {
             let mut chars = source_chunk.valid().chars();
@@ -71,16 +70,11 @@ impl Snippet {
                     chars.next().unwrap();
                 } else if chr == '\n' {
                     snippet.next_line(1);
+                } else if !chr.is_control() {
+                    snippet.push_char(chr, chr.len_utf8(), false);
                 } else {
-                    let chr_width =
-                        unicode_width::UnicodeWidthChar::width(chr).filter(|_| chr != '\0');
-
-                    if let Some(chr_width) = chr_width {
-                        snippet.push_char(chr, chr_width, chr.len_utf8(), false);
-                    } else {
-                        let (alt, text) = on_control(chr);
-                        snippet.push_text(&text, chr.len_utf8(), alt);
-                    }
+                    let (alt, text) = on_control(chr);
+                    snippet.push_str(&text, chr.len_utf8(), alt);
                 }
             }
 
@@ -89,11 +83,11 @@ impl Snippet {
                 if invalid_multi {
                     for &byte in invalid_utf8.iter() {
                         let (alt, text) = on_invalid(&[byte]);
-                        snippet.push_text(&text, 1, alt);
+                        snippet.push_str(&text, 1, alt);
                     }
                 } else {
                     let (alt, text) = on_invalid(invalid_utf8);
-                    snippet.push_text(&text, invalid_utf8.len(), alt);
+                    snippet.push_str(&text, invalid_utf8.len(), alt);
                 }
             }
         }
