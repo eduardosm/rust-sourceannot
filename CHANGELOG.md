@@ -6,8 +6,8 @@
 
 - `Annotations::render` now passes output to a new `Output` trait instead of
   returning a `Vec`.
-- `SourceSnippet` is now a trait that can be implemented by different type of
-  sources (`Utf8SourceSnippet`, `Latin1SourceSnippet`).
+- `SourceSnippet` has been replaced with a trait that can be implemented by
+  different type of sources (`Utf8Snippet`, `Latin1Snippet`).
 - A new `std` feature, which depends on libstd has been enabled. Default features
   need to be disabled to support `no_std`.
 

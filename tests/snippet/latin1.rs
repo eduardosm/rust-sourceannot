@@ -1,4 +1,4 @@
-use sourceannot::{ControlCharStyle, Latin1SourceSnippet, SourceSnippet as _};
+use sourceannot::{ControlCharStyle, Latin1Snippet, Snippet as _};
 
 use super::test_render_simple;
 
@@ -6,7 +6,7 @@ use super::test_render_simple;
 fn test_simple_1() {
     // 1
     let source = b"123\n456";
-    let snippet = Latin1SourceSnippet::new(source, false, 4, ControlCharStyle::Replacement, true);
+    let snippet = Latin1Snippet::new(source, false, 4, ControlCharStyle::Replacement, true);
 
     assert_eq!(snippet.line_map().num_lines(), 2);
 
@@ -21,7 +21,7 @@ fn test_simple_1() {
 
     // 2
     let source = b"123\n456\n";
-    let snippet = Latin1SourceSnippet::new(source, false, 4, ControlCharStyle::Replacement, true);
+    let snippet = Latin1Snippet::new(source, false, 4, ControlCharStyle::Replacement, true);
 
     assert_eq!(snippet.line_map().num_lines(), 3);
 
@@ -39,7 +39,7 @@ fn test_simple_1() {
 #[test]
 fn test_non_ascii_char() {
     let source = b"123\n4\xFF6";
-    let snippet = Latin1SourceSnippet::new(source, false, 4, ControlCharStyle::Replacement, true);
+    let snippet = Latin1Snippet::new(source, false, 4, ControlCharStyle::Replacement, true);
 
     assert_eq!(snippet.line_map().num_lines(), 2);
 
@@ -53,7 +53,7 @@ fn test_tab() {
     let source = b"123\n4\t6";
 
     // width 3
-    let snippet = Latin1SourceSnippet::new(source, false, 3, ControlCharStyle::Replacement, true);
+    let snippet = Latin1Snippet::new(source, false, 3, ControlCharStyle::Replacement, true);
 
     assert_eq!(snippet.line_map().num_lines(), 2);
 
@@ -62,7 +62,7 @@ fn test_tab() {
     test_render_simple(&snippet, 6..7, "4   6", "    ^", "ttttt");
 
     // width 4
-    let snippet = Latin1SourceSnippet::new(source, false, 4, ControlCharStyle::Replacement, true);
+    let snippet = Latin1Snippet::new(source, false, 4, ControlCharStyle::Replacement, true);
 
     assert_eq!(snippet.line_map().num_lines(), 2);
 
@@ -71,7 +71,7 @@ fn test_tab() {
     test_render_simple(&snippet, 6..7, "4    6", "     ^", "tttttt");
 
     // width 0
-    let snippet = Latin1SourceSnippet::new(source, false, 0, ControlCharStyle::Replacement, true);
+    let snippet = Latin1Snippet::new(source, false, 0, ControlCharStyle::Replacement, true);
 
     assert_eq!(snippet.line_map().num_lines(), 2);
 
@@ -85,7 +85,7 @@ fn test_line_breaks() {
     let source = b"123\r\n4\r6\r\n";
 
     // CR is not EOL
-    let snippet = Latin1SourceSnippet::new(source, false, 4, ControlCharStyle::Hexadecimal, true);
+    let snippet = Latin1Snippet::new(source, false, 4, ControlCharStyle::Hexadecimal, true);
 
     assert_eq!(snippet.line_map().num_lines(), 3);
 
@@ -104,7 +104,7 @@ fn test_line_breaks() {
     test_render_simple(&snippet, 10..10, "", "^", "");
 
     // CR is EOL
-    let snippet = Latin1SourceSnippet::new(source, true, 4, ControlCharStyle::Hexadecimal, true);
+    let snippet = Latin1Snippet::new(source, true, 4, ControlCharStyle::Hexadecimal, true);
 
     assert_eq!(snippet.line_map().num_lines(), 4);
 
@@ -128,7 +128,7 @@ fn test_control_char_replacement() {
     let source = b"123\n4\x006";
 
     // alt
-    let snippet = Latin1SourceSnippet::new(source, false, 4, ControlCharStyle::Replacement, true);
+    let snippet = Latin1Snippet::new(source, false, 4, ControlCharStyle::Replacement, true);
 
     assert_eq!(snippet.line_map().num_lines(), 2);
 
@@ -137,7 +137,7 @@ fn test_control_char_replacement() {
     test_render_simple(&snippet, 6..7, "4\u{2400}6", "  ^", "tTt");
 
     // non-alt
-    let snippet = Latin1SourceSnippet::new(source, false, 4, ControlCharStyle::Replacement, false);
+    let snippet = Latin1Snippet::new(source, false, 4, ControlCharStyle::Replacement, false);
 
     assert_eq!(snippet.line_map().num_lines(), 2);
 
@@ -151,7 +151,7 @@ fn test_control_char_hex() {
     let source = b"123\n4\x006";
 
     // alt
-    let snippet = Latin1SourceSnippet::new(source, false, 4, ControlCharStyle::Hexadecimal, true);
+    let snippet = Latin1Snippet::new(source, false, 4, ControlCharStyle::Hexadecimal, true);
 
     assert_eq!(snippet.line_map().num_lines(), 2);
 
@@ -160,7 +160,7 @@ fn test_control_char_hex() {
     test_render_simple(&snippet, 6..7, "4<00>6", "     ^", "tTTTTt");
 
     // non-alt
-    let snippet = Latin1SourceSnippet::new(source, false, 4, ControlCharStyle::Hexadecimal, false);
+    let snippet = Latin1Snippet::new(source, false, 4, ControlCharStyle::Hexadecimal, false);
 
     assert_eq!(snippet.line_map().num_lines(), 2);
 

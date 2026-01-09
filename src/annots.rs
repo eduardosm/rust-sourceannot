@@ -2,18 +2,17 @@ use alloc::collections::BTreeMap;
 use alloc::string::String;
 use alloc::{vec, vec::Vec};
 
-use crate::snippet::SourceSnippetLine;
-use crate::{AnnotStyle, MainStyle, Output, SourceSnippet};
+use crate::snippet::SnippetLine;
+use crate::{AnnotStyle, MainStyle, Output, Snippet};
 
-/// A collection of annotations attached to a [`SourceSnippet`].
+/// A collection of annotations attached to a [`Snippet`].
 ///
 /// # Spans
 ///
 /// Each annotation is a [`Range<usize>`](core::ops::Range) whose indices are
 /// positions in the snippet's *source unit* sequence (as defined by the concrete
-/// [`SourceSnippet`] implementation). For example,
-/// [`Utf8SourceSnippet`](crate::Utf8SourceSnippet) uses byte offsets into the
-/// original UTF-8 sequence.
+/// [`Snippet`] implementation). For example, [`Utf8Snippet`](crate::Utf8Snippet)
+/// uses byte offsets into the original UTF-8 sequence.
 ///
 /// Spans are half-open: `start` is inclusive, `end` is exclusive.
 /// Zero-length spans (`start == end`) are allowed and render as a single caret
@@ -33,7 +32,7 @@ use crate::{AnnotStyle, MainStyle, Output, SourceSnippet};
 ///
 /// See the [crate-level](crate#example) documentation.
 pub struct Annotations<'a, M> {
-    snippet: &'a dyn SourceSnippet,
+    snippet: &'a dyn Snippet,
     first_line_no: usize,
     main_style: MainStyle<M>,
     annots: Vec<Annotation<M>>,
@@ -52,11 +51,7 @@ impl<'a, M> Annotations<'a, M> {
     /// `first_line_no` controls the line number shown for the snippet's first
     /// line (line index `0`). You usually want to use `1` when the snippet
     /// represents a whole source file.
-    pub fn new(
-        snippet: &'a dyn SourceSnippet,
-        first_line_no: usize,
-        main_style: MainStyle<M>,
-    ) -> Self {
+    pub fn new(snippet: &'a dyn Snippet, first_line_no: usize, main_style: MainStyle<M>) -> Self {
         Self {
             snippet,
             first_line_no,
@@ -139,7 +134,7 @@ impl<'a, M> Annotations<'a, M> {
 }
 
 struct PreProcAnnots<'a, M> {
-    snippet: &'a dyn SourceSnippet,
+    snippet: &'a dyn Snippet,
     first_line_no: usize,
     main_style: &'a MainStyle<M>,
     annots: Vec<PreProcAnnot<'a, M>>,
@@ -161,7 +156,7 @@ struct PreProcAnnot<'a, M> {
 struct LineData {
     // "sl" stands for single line
     // "ml" stands for multi line
-    snippet: SourceSnippetLine,
+    snippet: SnippetLine,
     sl_annots: Vec<usize>,
     ml_annots_starts: Vec<usize>,
     ml_annots_ends: Vec<usize>,
@@ -170,11 +165,7 @@ struct LineData {
 }
 
 impl<'a, M> PreProcAnnots<'a, M> {
-    fn new(
-        snippet: &'a dyn SourceSnippet,
-        first_line_no: usize,
-        main_style: &'a MainStyle<M>,
-    ) -> Self {
+    fn new(snippet: &'a dyn Snippet, first_line_no: usize, main_style: &'a MainStyle<M>) -> Self {
         Self {
             snippet,
             first_line_no,
@@ -359,7 +350,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
         dest.insert(insert_i, annot_i);
     }
 
-    fn create_line_data(snippet: &'a dyn SourceSnippet, line_i: usize) -> LineData {
+    fn create_line_data(snippet: &'a dyn Snippet, line_i: usize) -> LineData {
         let snippet_line = snippet.get_line(line_i);
         let styles = snippet_line.gather_styles();
         LineData {
@@ -415,7 +406,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
         };
 
         // Renders the text of a line
-        let put_line_text = |line: &SourceSnippetLine, styles: &[(usize, bool)], out: &mut O| {
+        let put_line_text = |line: &SnippetLine, styles: &[(usize, bool)], out: &mut O| {
             assert_eq!(styles.len(), line.text.len());
             let mut chr_i = 0;
             while chr_i < line.text.len() {
@@ -437,7 +428,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
             Ok(())
         };
 
-        let put_fill_line_text = |line: &SourceSnippetLine, out: &mut O| {
+        let put_fill_line_text = |line: &SnippetLine, out: &mut O| {
             // FIXME: handle alts
             out.put_str(&line.text, &self.main_style.text_normal_meta)?;
             out.put_char('\n', &self.main_style.spaces_meta)?;

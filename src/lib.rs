@@ -15,18 +15,18 @@
 //!
 //! # Core concepts
 //!
-//! - A [`SourceSnippet`] provides access to the source *line by line*.
+//! - A [`Snippet`] provides access to the source *line by line*.
 //! - An [`Annotations`] value attaches one or more labeled spans to that
 //!   snippet and renders the result.
 //!
 //! ## Spans and positions
 //!
 //! Annotation spans are [`Range<usize>`](core::ops::Range) indices into the
-//! snippet's *source unit* sequence (see [`SourceSnippet`]). The exact unit
-//! depends on the snippet type:
+//! snippet's *source unit* sequence (see [`Snippet`]). The exact unit depends
+//! on the snippet type:
 //!
-//! - [`Utf8SourceSnippet`] uses **byte offsets** into the original `&[u8]`.
-//! - [`Latin1SourceSnippet`] uses **byte offsets** into the original `&[u8]`.
+//! - [`Utf8Snippet`] uses **byte offsets** into the original `&[u8]`.
+//! - [`Latin1Snippet`] uses **byte offsets** into the original `&[u8]`.
 //!
 //! These indices are *not* indices into the rendered output: rendering may
 //! transform the source (for example, tabs are expanded, some control characters
@@ -63,7 +63,7 @@
 //! "#};
 //!
 //! // Create the snippet
-//! let snippet = sourceannot::Utf8SourceSnippet::new(
+//! let snippet = sourceannot::Utf8Snippet::new(
 //!     source.as_bytes(),
 //!     false,
 //!     4,
@@ -173,8 +173,8 @@ mod snippet;
 
 pub use annots::Annotations;
 pub use snippet::{
-    ControlCharStyle, InvalidUtf8SeqStyle, Latin1SourceSnippet, LineMap, LineMapBuilder,
-    SourceSnippet, SourceSnippetLine, SourceSnippetLineBuilder, Utf8SourceSnippet,
+    ControlCharStyle, InvalidUtf8SeqStyle, Latin1Snippet, LineMap, LineMapBuilder, Snippet,
+    SnippetLine, SnippetLineBuilder, Utf8Snippet,
 };
 
 /// Trait that consumes a rendered annotated snippet.

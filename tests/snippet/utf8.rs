@@ -1,4 +1,4 @@
-use sourceannot::{ControlCharStyle, InvalidUtf8SeqStyle, SourceSnippet as _, Utf8SourceSnippet};
+use sourceannot::{ControlCharStyle, InvalidUtf8SeqStyle, Snippet as _, Utf8Snippet};
 
 use super::test_render_simple;
 
@@ -6,7 +6,7 @@ use super::test_render_simple;
 fn test_simple_1() {
     // 1
     let source = "123\n456";
-    let snippet = Utf8SourceSnippet::new(
+    let snippet = Utf8Snippet::new(
         source.as_bytes(),
         false,
         4,
@@ -29,7 +29,7 @@ fn test_simple_1() {
 
     // 2
     let source = "123\n456\n";
-    let snippet = Utf8SourceSnippet::new(
+    let snippet = Utf8Snippet::new(
         source.as_bytes(),
         false,
         4,
@@ -55,7 +55,7 @@ fn test_simple_1() {
 #[test]
 fn test_non_ascii_char() {
     let source = "123\n4\u{FF}6";
-    let snippet = Utf8SourceSnippet::new(
+    let snippet = Utf8Snippet::new(
         source.as_bytes(),
         false,
         4,
@@ -79,7 +79,7 @@ fn test_tab() {
     let source = "123\n4\t6";
 
     // width 3
-    let snippet = Utf8SourceSnippet::new(
+    let snippet = Utf8Snippet::new(
         source.as_bytes(),
         false,
         3,
@@ -96,7 +96,7 @@ fn test_tab() {
     test_render_simple(&snippet, 6..7, "4   6", "    ^", "ttttt");
 
     // width 4
-    let snippet = Utf8SourceSnippet::new(
+    let snippet = Utf8Snippet::new(
         source.as_bytes(),
         false,
         4,
@@ -113,7 +113,7 @@ fn test_tab() {
     test_render_simple(&snippet, 6..7, "4    6", "     ^", "tttttt");
 
     // width 0
-    let snippet = Utf8SourceSnippet::new(
+    let snippet = Utf8Snippet::new(
         source.as_bytes(),
         false,
         0,
@@ -135,7 +135,7 @@ fn test_line_breaks() {
     let source = "123\r\n4\r6\r\n";
 
     // CR is not EOL
-    let snippet = Utf8SourceSnippet::new(
+    let snippet = Utf8Snippet::new(
         source.as_bytes(),
         false,
         4,
@@ -162,7 +162,7 @@ fn test_line_breaks() {
     test_render_simple(&snippet, 10..10, "", "^", "");
 
     // CR is EOL
-    let snippet = Utf8SourceSnippet::new(
+    let snippet = Utf8Snippet::new(
         source.as_bytes(),
         true,
         4,
@@ -194,7 +194,7 @@ fn test_control_char_replacement() {
     let source = "123\n4\u{0}6";
 
     // alt
-    let snippet = Utf8SourceSnippet::new(
+    let snippet = Utf8Snippet::new(
         source.as_bytes(),
         false,
         4,
@@ -211,7 +211,7 @@ fn test_control_char_replacement() {
     test_render_simple(&snippet, 6..7, "4\u{2400}6", "  ^", "tTt");
 
     // non-alt
-    let snippet = Utf8SourceSnippet::new(
+    let snippet = Utf8Snippet::new(
         source.as_bytes(),
         false,
         4,
@@ -233,7 +233,7 @@ fn test_control_char_hex() {
     let source = "123\n4\u{0}6\n7\u{2066}9";
 
     // alt
-    let snippet = Utf8SourceSnippet::new(
+    let snippet = Utf8Snippet::new(
         source.as_bytes(),
         false,
         4,
@@ -256,7 +256,7 @@ fn test_control_char_hex() {
     test_render_simple(&snippet, 12..13, "7<2066>9", "       ^", "tTTTTTTt");
 
     // non-alt
-    let snippet = Utf8SourceSnippet::new(
+    let snippet = Utf8Snippet::new(
         source.as_bytes(),
         false,
         4,
@@ -283,7 +283,7 @@ fn test_invalid_char_replacement() {
     let source = b"123\n4\xF1\x806";
 
     // alt
-    let snippet = Utf8SourceSnippet::new(
+    let snippet = Utf8Snippet::new(
         source,
         false,
         4,
@@ -302,7 +302,7 @@ fn test_invalid_char_replacement() {
     test_render_simple(&snippet, 7..8, "4\u{FFFD}6", "  ^", "tTt");
 
     // non-alt
-    let snippet = Utf8SourceSnippet::new(
+    let snippet = Utf8Snippet::new(
         source,
         false,
         4,
@@ -326,7 +326,7 @@ fn test_invalid_char_hex() {
     let source = b"123\n4\xF1\x806";
 
     // alt
-    let snippet = Utf8SourceSnippet::new(
+    let snippet = Utf8Snippet::new(
         source,
         false,
         4,
@@ -345,7 +345,7 @@ fn test_invalid_char_hex() {
     test_render_simple(&snippet, 7..8, "4<F1><80>6", "         ^", "tTTTTTTTTt");
 
     // non-alt
-    let snippet = Utf8SourceSnippet::new(
+    let snippet = Utf8Snippet::new(
         source,
         false,
         4,
@@ -367,7 +367,7 @@ fn test_invalid_char_hex() {
 #[test]
 fn test_wide_char() {
     let source = "123\n4\u{FF12}6";
-    let snippet = Utf8SourceSnippet::new(
+    let snippet = Utf8Snippet::new(
         source.as_bytes(),
         false,
         4,

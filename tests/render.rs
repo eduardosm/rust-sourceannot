@@ -9,7 +9,7 @@
 
 use sourceannot::{
     AnnotStyle, Annotations, ControlCharStyle, InvalidUtf8SeqStyle, MainStyle, MarginStyle,
-    Utf8SourceSnippet,
+    Utf8Snippet,
 };
 
 const MAIN_STYLE: MainStyle<char> = MainStyle {
@@ -63,8 +63,8 @@ impl sourceannot::Output<char> for &mut TestOutput {
     }
 }
 
-fn build_snippet(source: &(impl ?Sized + AsRef<[u8]>)) -> Utf8SourceSnippet<'_> {
-    Utf8SourceSnippet::new(
+fn build_snippet(source: &(impl ?Sized + AsRef<[u8]>)) -> Utf8Snippet<'_> {
+    Utf8Snippet::new(
         source.as_ref(),
         false,
         4,
