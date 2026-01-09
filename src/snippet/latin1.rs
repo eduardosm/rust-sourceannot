@@ -1,8 +1,7 @@
 use alloc::format;
 use alloc::string::String;
 
-use super::SourceSnippetBuilder;
-use crate::Snippet;
+use super::Snippet;
 
 impl Snippet {
     /// Creates a snippet from a Latin-1 (ISO 8859-1) source.
@@ -39,7 +38,7 @@ impl Snippet {
     where
         FnCtrl: FnMut(u8) -> (bool, String),
     {
-        let mut snippet = SourceSnippetBuilder::new(start_line);
+        let mut snippet = Snippet::builder(start_line);
 
         let mut chars = source.iter();
         while let Some(&chr) = chars.next() {
@@ -48,17 +47,11 @@ impl Snippet {
                 chars.next().unwrap();
             } else if chr == b'\n' {
                 snippet.next_line(1);
+            } else if matches!(chr, b' '..=b'~' | 0xA0..=0xFF) {
+                snippet.push_char(chr.into(), 1, false);
             } else {
-                let orig_len = 1;
-
-                if matches!(chr, b' '..=b'~' | 0xA0..=0xFF) {
-                    // The width of all printable Latin-1 characters is 1.
-                    let chr_width = 1;
-                    snippet.push_char(chr.into(), chr_width, orig_len, false);
-                } else {
-                    let (alt, text) = on_control(chr);
-                    snippet.push_text(&text, orig_len, alt);
-                }
+                let (alt, text) = on_control(chr);
+                snippet.push_str(&text, 1, alt);
             }
         }
 
