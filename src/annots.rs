@@ -42,7 +42,7 @@ impl<'a, M> Annotations<'a, M> {
     }
 
     pub fn max_line_no_width(&self) -> usize {
-        let (max_line_i, _) = self.snippet.get_line_col(self.max_pos);
+        let max_line_i = self.snippet.pos_to_line(self.max_pos);
         let max_line_no = max_line_i + self.snippet.start_line();
         (max_line_no.max(1).ilog10() + 1) as usize
     }

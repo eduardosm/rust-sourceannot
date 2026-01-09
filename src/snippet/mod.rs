@@ -88,19 +88,11 @@ impl Snippet {
         SnippetBuilder::new(start_line)
     }
 
-    pub fn get_line_col(&self, pos: usize) -> (usize, usize) {
-        let line = match self.line_map.binary_search(&pos) {
+    pub(crate) fn pos_to_line(&self, pos: usize) -> usize {
+        match self.line_map.binary_search(&pos) {
             Ok(i) => i + 1,
             Err(i) => i,
-        };
-        let line_start = if line == 0 {
-            0
-        } else {
-            self.line_map[line - 1]
-        };
-        let col = self.gather_width(line_start..pos);
-
-        (line, col)
+        }
     }
 
     fn gather_utf8_len(&self, range: core::ops::Range<usize>) -> usize {
@@ -336,36 +328,49 @@ mod tests {
 
     #[test]
     fn test_get_line_col() {
-        let snippet = Snippet::build_from_utf8(0, b"123\n456", 4);
+        let mut builder = Snippet::builder(0);
+        builder.push_char('1', 1, false);
+        builder.push_char('2', 1, false);
+        builder.push_char('3', 1, false);
+        builder.next_line(1);
+        builder.push_char('4', 1, false);
+        builder.push_char('5', 1, false);
+        builder.push_char('6', 1, false);
+        let snippet = builder.finish();
 
-        assert_eq!(snippet.get_line_col(0), (0, 0));
-        assert_eq!(snippet.get_line_col(1), (0, 1));
-        assert_eq!(snippet.get_line_col(2), (0, 2));
-        assert_eq!(snippet.get_line_col(3), (0, 3));
-        assert_eq!(snippet.get_line_col(4), (1, 0));
-        assert_eq!(snippet.get_line_col(5), (1, 1));
-        assert_eq!(snippet.get_line_col(6), (1, 2));
+        assert_eq!(snippet.pos_to_line(0), (0));
+        assert_eq!(snippet.pos_to_line(1), (0));
+        assert_eq!(snippet.pos_to_line(2), (0));
+        assert_eq!(snippet.pos_to_line(3), (0));
+        assert_eq!(snippet.pos_to_line(4), (1));
+        assert_eq!(snippet.pos_to_line(5), (1));
+        assert_eq!(snippet.pos_to_line(6), (1));
     }
 
     #[test]
     fn test_get_line_col_large_meta() {
-        let snippet = Snippet::build_from_utf8_ex(
-            0,
-            b"1\xFF2",
-            |_| unreachable!(),
-            |_| (true, "\u{A7}".repeat(150)),
-            false,
-        );
+        let mut builder = Snippet::builder(0);
+        builder.push_char('1', 1, false);
+        builder.push_str(&"\u{A7}".repeat(150), 150, false);
+        let snippet = builder.finish();
 
-        assert_eq!(snippet.get_line_col(0), (0, 0));
-        assert_eq!(snippet.get_line_col(1), (0, 1));
-        assert_eq!(snippet.get_line_col(2), (0, 151));
-        assert_eq!(snippet.get_line_col(3), (0, 152));
+        assert_eq!(snippet.pos_to_line(0), (0));
+        assert_eq!(snippet.pos_to_line(1), (0));
+        assert_eq!(snippet.pos_to_line(2), (0));
+        assert_eq!(snippet.pos_to_line(3), (0));
     }
 
     #[test]
     fn test_convert_span_simple() {
-        let snippet = Snippet::build_from_utf8(0, b"123\n456", 4);
+        let mut builder = Snippet::builder(0);
+        builder.push_char('1', 1, false);
+        builder.push_char('2', 1, false);
+        builder.push_char('3', 1, false);
+        builder.next_line(1);
+        builder.push_char('4', 1, false);
+        builder.push_char('5', 1, false);
+        builder.push_char('6', 1, false);
+        let snippet = builder.finish();
 
         assert_eq!(
             snippet.convert_span(0, 0),
@@ -491,8 +496,16 @@ mod tests {
     }
 
     #[test]
-    fn test_convert_span_multi_byte() {
-        let snippet = Snippet::build_from_utf8(0, b"1\xEF\xBC\x923\n456", 4);
+    fn test_convert_span_multi_unit() {
+        let mut builder = Snippet::builder(0);
+        builder.push_char('1', 1, false);
+        builder.push_char('\u{FF12}', 3, false);
+        builder.push_char('3', 1, false);
+        builder.next_line(1);
+        builder.push_char('4', 1, false);
+        builder.push_char('5', 1, false);
+        builder.push_char('6', 1, false);
+        let snippet = builder.finish();
 
         assert_eq!(
             snippet.convert_span(0, 1),
@@ -596,64 +609,12 @@ mod tests {
     }
 
     #[test]
-    fn test_convert_span_invalid_utf8() {
-        let snippet = Snippet::build_from_utf8(0, b"1\xFF2\n3", 4);
-
-        assert_eq!(
-            snippet.convert_span(0, 1),
-            SourceSpan {
-                start_line: 0,
-                start_col: 0,
-                start_utf8: 0,
-                end_line: 0,
-                end_col: 1,
-                end_utf8: 1,
-            },
-        );
-        assert_eq!(
-            snippet.convert_span(1, 2),
-            SourceSpan {
-                start_line: 0,
-                start_col: 1,
-                start_utf8: 1,
-                end_line: 0,
-                end_col: 5,
-                end_utf8: 5,
-            },
-        );
-        assert_eq!(
-            snippet.convert_span(2, 3),
-            SourceSpan {
-                start_line: 0,
-                start_col: 5,
-                start_utf8: 5,
-                end_line: 0,
-                end_col: 6,
-                end_utf8: 6,
-            },
-        );
-        assert_eq!(
-            snippet.convert_span(4, 5),
-            SourceSpan {
-                start_line: 1,
-                start_col: 0,
-                start_utf8: 0,
-                end_line: 1,
-                end_col: 1,
-                end_utf8: 1,
-            },
-        );
-    }
-
-    #[test]
     fn test_convert_span_large_meta() {
-        let snippet = Snippet::build_from_utf8_ex(
-            0,
-            b"1\xFF2",
-            |_| unreachable!(),
-            |_| (true, "\u{A7}".repeat(150)),
-            false,
-        );
+        let mut builder = Snippet::builder(0);
+        builder.push_char('1', 1, false);
+        builder.push_str(&"\u{A7}".repeat(150), 1, false);
+        builder.push_char('2', 1, false);
+        let snippet = builder.finish();
 
         assert_eq!(
             snippet.convert_span(0, 1),
