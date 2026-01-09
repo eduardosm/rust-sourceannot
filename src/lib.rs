@@ -24,7 +24,7 @@
 //! "#};
 //!
 //! // Create the snippet
-//! let snippet = sourceannot::SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+//! let snippet = sourceannot::Snippet::build_from_utf8(1, source.as_bytes(), 4);
 //!
 //! // Styles are generic over the type of the metadata that accompanies each
 //! // chunk of rendered text. In this example, we will use the following enum:
@@ -125,7 +125,7 @@ mod range_set;
 mod snippet;
 
 pub use annots::Annotations;
-pub use snippet::SourceSnippet;
+pub use snippet::Snippet;
 
 /// Trait that consumes a rendered annotated snippet.
 pub trait Output<M> {
