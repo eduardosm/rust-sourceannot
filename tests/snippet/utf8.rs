@@ -3,7 +3,7 @@ use sourceannot::{ControlCharStyle, InvalidUtf8SeqStyle, Snippet as _, Utf8Snipp
 use super::test_render_simple;
 
 #[test]
-fn test_simple_1() {
+fn test_simple() {
     // 1
     let source = "123\n456";
     let snippet = Utf8Snippet::new(
@@ -251,8 +251,8 @@ fn test_control_char_hex() {
     test_render_simple(&snippet, 8..9, "7<2066>9", "^       ", "tTTTTTTt");
     test_render_simple(&snippet, 9..10, "7<2066>9", " ^^^^^^ ", "tTTTTTTt");
     test_render_simple(&snippet, 10..11, "7<2066>9", " ^^^^^^ ", "tTTTTTTt");
-    test_render_simple(&snippet, 9..11, "7<2066>9", " ^^^^^^ ", "tTTTTTTt");
     test_render_simple(&snippet, 11..12, "7<2066>9", " ^^^^^^ ", "tTTTTTTt");
+    test_render_simple(&snippet, 9..12, "7<2066>9", " ^^^^^^ ", "tTTTTTTt");
     test_render_simple(&snippet, 12..13, "7<2066>9", "       ^", "tTTTTTTt");
 
     // non-alt
@@ -274,10 +274,11 @@ fn test_control_char_hex() {
     test_render_simple(&snippet, 8..9, "7<2066>9", "^       ", "tttttttt");
     test_render_simple(&snippet, 9..10, "7<2066>9", " ^^^^^^ ", "tttttttt");
     test_render_simple(&snippet, 10..11, "7<2066>9", " ^^^^^^ ", "tttttttt");
-    test_render_simple(&snippet, 9..11, "7<2066>9", " ^^^^^^ ", "tttttttt");
     test_render_simple(&snippet, 11..12, "7<2066>9", " ^^^^^^ ", "tttttttt");
+    test_render_simple(&snippet, 9..12, "7<2066>9", " ^^^^^^ ", "tttttttt");
     test_render_simple(&snippet, 12..13, "7<2066>9", "       ^", "tttttttt");
 }
+
 #[test]
 fn test_invalid_char_replacement() {
     let source = b"123\n4\xF1\x806";

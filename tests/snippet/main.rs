@@ -1,3 +1,4 @@
+mod chars;
 mod latin1;
 mod utf8;
 

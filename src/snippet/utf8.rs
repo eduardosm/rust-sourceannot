@@ -21,11 +21,6 @@ pub enum InvalidUtf8SeqStyle {
 /// A [`Snippet`](super::Snippet) backed by a byte slice that is interpreted as
 /// UTF-8, optionally containing invalid byte sequences.
 ///
-/// This snippet is designed for diagnostics: it renders normally-valid UTF-8
-/// text, but it also renders invalid sequences in a deterministic way (see
-/// [`InvalidUtf8SeqStyle`]) so that you can still display and annotate the
-/// original input.
-///
 /// Source positions (and annotation ranges) are **byte offsets** into the
 /// original UTF-8 sequence.
 pub struct Utf8Snippet<'a> {

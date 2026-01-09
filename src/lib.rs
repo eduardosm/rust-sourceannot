@@ -27,6 +27,7 @@
 //!
 //! - [`Utf8Snippet`] uses **byte offsets** into the original `&[u8]`.
 //! - [`Latin1Snippet`] uses **byte offsets** into the original `&[u8]`.
+//! - [`CharsSnippet`] uses **char indices** into the original `&[char]`.
 //!
 //! These indices are *not* indices into the rendered output: rendering may
 //! transform the source (for example, tabs are expanded, some control characters
@@ -173,8 +174,8 @@ mod snippet;
 
 pub use annots::Annotations;
 pub use snippet::{
-    ControlCharStyle, InvalidUtf8SeqStyle, Latin1Snippet, LineMap, LineMapBuilder, Snippet,
-    SnippetLine, SnippetLineBuilder, Utf8Snippet,
+    CharsSnippet, ControlCharStyle, InvalidUtf8SeqStyle, Latin1Snippet, LineMap, LineMapBuilder,
+    Snippet, SnippetLine, SnippetLineBuilder, Utf8Snippet,
 };
 
 /// Trait that consumes a rendered annotated snippet.

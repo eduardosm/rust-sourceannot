@@ -1,9 +1,11 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
+mod chars;
 mod latin1;
 mod utf8;
 
+pub use chars::CharsSnippet;
 pub use latin1::Latin1Snippet;
 pub use utf8::{InvalidUtf8SeqStyle, Utf8Snippet};
 
