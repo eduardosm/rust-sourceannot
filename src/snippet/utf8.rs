@@ -58,8 +58,6 @@ impl Snippet {
                     chars.next().unwrap();
                 } else if chr == '\n' {
                     snippet.next_line(1);
-                } else if !chr.is_control() {
-                    snippet.push_char(chr, chr.len_utf8(), false);
                 } else {
                     let chr_len = chr.len_utf8();
                     let is_control = snippet.maybe_push_control_char(
