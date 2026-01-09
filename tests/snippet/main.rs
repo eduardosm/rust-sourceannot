@@ -43,7 +43,7 @@ impl sourceannot::Output<char> for &mut TestOutput {
 
 #[track_caller]
 fn test_render_simple(
-    snippet: &dyn sourceannot::SourceSnippet,
+    snippet: &dyn sourceannot::Snippet,
     span: std::ops::Range<usize>,
     text_line: &str,
     carets_line: &str,
@@ -92,15 +92,15 @@ fn test_large_chunk() {
         }
     }
 
-    impl sourceannot::SourceSnippet for TestSnippet {
+    impl sourceannot::Snippet for TestSnippet {
         fn line_map(&self) -> &sourceannot::LineMap {
             &self.line_map
         }
 
-        fn get_line(&self, line_i: usize) -> sourceannot::SourceSnippetLine {
+        fn get_line(&self, line_i: usize) -> sourceannot::SnippetLine {
             assert_eq!(line_i, 0);
 
-            let mut builder = sourceannot::SourceSnippetLine::builder();
+            let mut builder = sourceannot::SnippetLine::builder();
             builder.push_char('a', 1, false);
             builder.push_str(&"¬".repeat(self.n), 4, true);
             builder.push_char('b', 1, false);

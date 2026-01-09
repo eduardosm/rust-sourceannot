@@ -1,14 +1,13 @@
 use super::{ControlCharStyle, LineMap};
 
-/// A [`SourceSnippet`](super::SourceSnippet) backed by a Latin-1 (ISO-8859-1)
-/// byte slice.
+/// A [`Snippet`](super::Snippet) backed by a Latin-1 (ISO-8859-1) byte slice.
 ///
 /// Each input byte is interpreted as the corresponding Unicode scalar value
 /// (U+0000 to U+00FF).
 ///
 /// Source positions (and annotation ranges) are **byte offsets** into the
 /// original Latin-1 source slice.
-pub struct Latin1SourceSnippet<'a> {
+pub struct Latin1Snippet<'a> {
     source: &'a [u8],
     line_map: LineMap,
     tab_width: usize,
@@ -16,7 +15,7 @@ pub struct Latin1SourceSnippet<'a> {
     control_char_alt: bool,
 }
 
-impl<'a> Latin1SourceSnippet<'a> {
+impl<'a> Latin1Snippet<'a> {
     /// Creates a Latin-1 source snippet.
     ///
     /// `"\n"` and `"\r\n"` are unconditionally recognized as line breaks. A bare
@@ -43,12 +42,12 @@ impl<'a> Latin1SourceSnippet<'a> {
     }
 }
 
-impl super::SourceSnippet for Latin1SourceSnippet<'_> {
+impl super::Snippet for Latin1Snippet<'_> {
     fn line_map(&self) -> &LineMap {
         &self.line_map
     }
 
-    fn get_line(&self, line_i: usize) -> super::SourceSnippetLine {
+    fn get_line(&self, line_i: usize) -> super::SnippetLine {
         let num_lines = self.line_map.num_lines();
         assert!(line_i < num_lines);
 
@@ -67,7 +66,7 @@ impl super::SourceSnippet for Latin1SourceSnippet<'_> {
             }
         }
 
-        let mut line_builder = super::SourceSnippetLine::builder();
+        let mut line_builder = super::SnippetLine::builder();
         for &chr in line_source {
             let is_control = line_builder.maybe_push_control_char(
                 chr.into(),

@@ -18,8 +18,8 @@ pub enum InvalidUtf8SeqStyle {
     Hexadecimal,
 }
 
-/// A [`SourceSnippet`](super::SourceSnippet) backed by a byte slice that is
-/// interpreted as UTF-8, optionally containing invalid byte sequences.
+/// A [`Snippet`](super::Snippet) backed by a byte slice that is interpreted as
+/// UTF-8, optionally containing invalid byte sequences.
 ///
 /// This snippet is designed for diagnostics: it renders normally-valid UTF-8
 /// text, but it also renders invalid sequences in a deterministic way (see
@@ -28,7 +28,7 @@ pub enum InvalidUtf8SeqStyle {
 ///
 /// Source positions (and annotation ranges) are **byte offsets** into the
 /// original UTF-8 sequence.
-pub struct Utf8SourceSnippet<'a> {
+pub struct Utf8Snippet<'a> {
     source: &'a [u8],
     line_map: LineMap,
     tab_width: usize,
@@ -38,7 +38,7 @@ pub struct Utf8SourceSnippet<'a> {
     invalid_seq_alt: bool,
 }
 
-impl<'a> Utf8SourceSnippet<'a> {
+impl<'a> Utf8Snippet<'a> {
     /// Creates a UTF-8 snippet from a (potentially invalid) byte slice.
     ///
     /// `"\n"` and `"\r\n"` are unconditionally recognized as line breaks. A bare
@@ -73,12 +73,12 @@ impl<'a> Utf8SourceSnippet<'a> {
     }
 }
 
-impl super::SourceSnippet for Utf8SourceSnippet<'_> {
+impl super::Snippet for Utf8Snippet<'_> {
     fn line_map(&self) -> &LineMap {
         &self.line_map
     }
 
-    fn get_line(&self, line_i: usize) -> super::SourceSnippetLine {
+    fn get_line(&self, line_i: usize) -> super::SnippetLine {
         let num_lines = self.line_map.num_lines();
         assert!(line_i < num_lines);
 
@@ -97,7 +97,7 @@ impl super::SourceSnippet for Utf8SourceSnippet<'_> {
             }
         }
 
-        let mut line_builder = super::SourceSnippetLine::builder();
+        let mut line_builder = super::SnippetLine::builder();
         for source_chunk in line_source.utf8_chunks() {
             for chr in source_chunk.valid().chars() {
                 let is_control = line_builder.maybe_push_control_char(

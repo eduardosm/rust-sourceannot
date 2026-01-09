@@ -4,21 +4,16 @@ use alloc::vec::Vec;
 mod latin1;
 mod utf8;
 
-pub use latin1::Latin1SourceSnippet;
-pub use utf8::{InvalidUtf8SeqStyle, Utf8SourceSnippet};
+pub use latin1::Latin1Snippet;
+pub use utf8::{InvalidUtf8SeqStyle, Utf8Snippet};
 
 /// Style for rendering control characters (except tabs and line breaks).
 ///
-/// This style is applied by [`SourceSnippetLineBuilder::maybe_push_control_char`],
+/// This style is applied by [`SnippetLineBuilder::maybe_push_control_char()`],
 /// which renders certain control and "invisible" characters in a safe, explicit
 /// way.
 ///
 /// # Rendering rules
-///
-/// When a character matches one of the handled cases below,
-/// [`SourceSnippetLineBuilder::maybe_push_control_char`] pushes a replacement
-/// representation (which may be empty) and returns `true`. Otherwise it leaves
-/// the builder unchanged and returns `false`.
 ///
 /// - Tab (U+0009): pushes `tab_width` spaces. `alt` is ignored (treated as
 ///   `false`).
@@ -41,7 +36,7 @@ pub enum ControlCharStyle {
 /// The mapping is defined in terms of *units*:
 /// - For byte-based snippets, a unit is a byte index.
 /// - For char-based snippets, a unit is an index into the `char` slice.
-/// - For custom snippets, units are whatever your [`SourceSnippet`] uses.
+/// - For custom snippets, units are whatever your [`Snippet`] uses.
 ///
 /// Line indices and column offsets returned by this type are **0-based**.
 ///
@@ -193,43 +188,43 @@ impl LineMapBuilder {
 /// All "positions" used by this crate are **0-based indices** in the unit
 /// sequence.
 ///
-/// - For [`Utf8SourceSnippet`], units are bytes (byte offsets).
-/// - For [`Latin1SourceSnippet`], units are bytes (byte offsets).
+/// - For [`Utf8Snippet`], units are bytes (byte offsets).
+/// - For [`Latin1Snippet`], units are bytes (byte offsets).
 /// - For custom snippets, units can be whatever is most convenient (e.g. an
 ///   index into a token array), as long as [`LineMap`] and
-///   [`get_line()`](SourceSnippet::get_line) agree.
-pub trait SourceSnippet {
+///   [`get_line()`](Snippet::get_line) agree.
+pub trait Snippet {
     /// Returns the line mapping for the snippet.
     fn line_map(&self) -> &LineMap;
 
-    /// Returns the [`SourceSnippetLine`] for the given line index.
+    /// Returns the [`SnippetLine`] for the given line index.
     ///
     /// `line_i` is a 0-based line index in `0..self.line_map().num_lines()`.
     ///
     /// # Panics
     ///
     /// Panics if `line_i` is out of bounds.
-    fn get_line(&self, line_i: usize) -> SourceSnippetLine;
+    fn get_line(&self, line_i: usize) -> SnippetLine;
 }
 
 /// A single rendered source line with metadata used for rendering snippets
 /// with annotations.
 ///
-/// This type is to be constructed in [`SourceSnippet::get_line()`], using
-/// [`SourceSnippetLine::builder()`] as starting point.
-pub struct SourceSnippetLine {
+/// This type is to be constructed in [`Snippet::get_line()`], using
+/// [`SnippetLine::builder()`] as starting point.
+pub struct SnippetLine {
     pub(crate) text: String,
     metas: Vec<UnitMeta>,
     large_widths: Vec<(usize, usize)>,
     large_utf8_lens: Vec<(usize, usize)>,
 }
 
-impl SourceSnippetLine {
-    /// Creates a builder for constructing a [`SourceSnippetLine`].
+impl SnippetLine {
+    /// Creates a builder for constructing a [`SnippetLine`].
     ///
-    /// This is mainly useful when implementing [`SourceSnippet::get_line()`].
-    pub fn builder() -> SourceSnippetLineBuilder {
-        SourceSnippetLineBuilder {
+    /// This is mainly useful when implementing [`Snippet::get_line()`].
+    pub fn builder() -> SnippetLineBuilder {
+        SnippetLineBuilder {
             text: String::new(),
             metas: Vec::new(),
             large_widths: Vec::new(),
@@ -317,37 +312,37 @@ impl SourceSnippetLine {
     }
 }
 
-/// Incremental builder for [`SourceSnippetLine`].
+/// Incremental builder for [`SnippetLine`].
 ///
 /// This builder is intended to be used while scanning a source line and
 /// emitting a (possibly transformed) rendered representation.
 ///
 /// If your input may contain control/invisible characters (including tabs),
-/// handle them explicitly via [`SourceSnippetLineBuilder::maybe_push_control_char`]
-/// and only use [`SourceSnippetLineBuilder::push_str`],
-/// [`SourceSnippetLineBuilder::push_char`], and [`SourceSnippetLineBuilder::push_fmt`]
+/// handle them explicitly via [`SnippetLineBuilder::maybe_push_control_char()`]
+/// and only use [`SnippetLineBuilder::push_str()`],
+/// [`SnippetLineBuilder::push_char()`], and [`SnippetLineBuilder::push_fmt()`]
 /// for already-sanitized text.
 ///
 /// Every `push_*` method takes an `orig_len` parameter: the number of *source
 /// units* consumed by what you are pushing. This preserves the mapping from
 /// positions in the original source (bytes/chars/units) to columns in the
 /// rendered line.
-pub struct SourceSnippetLineBuilder {
+pub struct SnippetLineBuilder {
     text: String,
     metas: Vec<UnitMeta>,
     large_widths: Vec<(usize, usize)>,
     large_utf8_lens: Vec<(usize, usize)>,
 }
 
-impl SourceSnippetLineBuilder {
-    /// Finishes the line and returns a [`SourceSnippetLine`].
+impl SnippetLineBuilder {
+    /// Finishes the line and returns a [`SnippetLine`].
     ///
     /// `orig_eol_len` is the number of source units used by the line terminator
     /// (for example, `0` for the last line, `1` for `"\n"` or `"\r"`, `2` for
     /// `"\r\n"`).
-    pub fn finish(mut self, orig_eol_len: usize) -> SourceSnippetLine {
+    pub fn finish(mut self, orig_eol_len: usize) -> SnippetLine {
         self.push_meta(orig_eol_len, 1, 0, false);
-        SourceSnippetLine {
+        SnippetLine {
             text: self.text,
             metas: self.metas,
             large_widths: self.large_widths,
@@ -366,7 +361,7 @@ impl SourceSnippetLineBuilder {
     /// Pushes a string fragment.
     ///
     /// `text` should not contain control/invisible characters; if it might,
-    /// scan it and use [`SourceSnippetLineBuilder::maybe_push_control_char()`]
+    /// scan it and use [`SnippetLineBuilder::maybe_push_control_char()`]
     /// (and/or other transformations) instead.
     ///
     /// `orig_len` is the number of source units represented by `text`.
@@ -379,8 +374,8 @@ impl SourceSnippetLineBuilder {
 
     /// Pushes a single character.
     ///
-    /// `chr` should not be a control/invisible character. If it might be,
-    /// call [`SourceSnippetLineBuilder::maybe_push_control_char()`] first.
+    /// `chr` should not be a control/invisible character. If it might be, call
+    /// [`SnippetLineBuilder::maybe_push_control_char()`] first.
     ///
     /// `orig_len` is the number of source units represented by this character
     /// (for UTF-8 sources, callers typically use `chr.len_utf8()`).
@@ -412,7 +407,7 @@ impl SourceSnippetLineBuilder {
     /// The formatted output should not contain control/invisible characters.
     /// If you need to handle such characters, format into a temporary buffer
     /// and scan/push characters using
-    /// [`SourceSnippetLineBuilder::maybe_push_control_char()`] as appropriate.
+    /// [`SnippetLineBuilder::maybe_push_control_char()`] as appropriate.
     ///
     /// `orig_len` is the number of source units represented by the formatted
     /// text.
@@ -443,8 +438,8 @@ impl SourceSnippetLineBuilder {
     /// # Example
     ///
     /// ```
-    /// # use sourceannot::{ControlCharStyle, SourceSnippetLine};
-    /// # let mut builder = SourceSnippetLine::builder();
+    /// # use sourceannot::{ControlCharStyle, SnippetLine};
+    /// # let mut builder = SnippetLine::builder();
     /// # let chr = '\t';
     /// // Assume `chr` is `char` from a UTF-8 source
     /// let is_control = builder.maybe_push_control_char(
