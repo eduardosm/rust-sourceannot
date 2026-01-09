@@ -5,7 +5,31 @@ use alloc::{vec, vec::Vec};
 use crate::snippet::SourceSpan;
 use crate::{AnnotStyle, MainStyle, Output, Snippet};
 
-/// A collection of annotations for a source snippet.
+/// A collection of annotations attached to a [`Snippet`].
+///
+/// # Spans
+///
+/// Each annotation is a [`Range<usize>`](core::ops::Range) whose indices are
+/// positions in the snippet's *source unit* sequence (as defined by the concrete
+/// [`Snippet`] implementation).
+///
+/// Spans are half-open: `start` is inclusive, `end` is exclusive. Zero-length
+/// spans (`start == end`) are allowed and render as a single caret pointing at
+/// that position.
+///
+/// # Labels
+///
+/// A label is stored as a list of `(String, M)` fragments. This allows
+/// attaching different metadata to different parts of the label (for example,
+/// to highlight a keyword inside the label). If you do not need per-fragment
+/// metadata, you can use a single-element vector.
+///
+/// Empty label fragments are allowed; the renderer will simply output nothing
+/// for them (just the carets or connector lines of the annotation).
+///
+/// # Example
+///
+/// See the [crate-level](crate#example) documentation.
 #[derive(Debug)]
 pub struct Annotations<'a, M> {
     snippet: &'a Snippet,
@@ -22,6 +46,7 @@ struct Annotation<M> {
 }
 
 impl<'a, M> Annotations<'a, M> {
+    /// Creates a new annotation collection for `snippet`.
     pub fn new(snippet: &'a Snippet, main_style: MainStyle<M>) -> Self {
         Self {
             snippet,
@@ -31,6 +56,13 @@ impl<'a, M> Annotations<'a, M> {
         }
     }
 
+    /// Adds an annotation span with the given style and label.
+    ///
+    /// `span` is a half-open range (`start` inclusive, `end` exclusive)
+    /// expressed in the snippet's source units (see [`Annotations`] docs).
+    ///
+    /// `label` is a list of text fragments with associated metadata; these
+    /// fragments are concatenated when rendered.
     pub fn add_annotation(
         &mut self,
         span: core::ops::Range<usize>,
@@ -49,9 +81,21 @@ impl<'a, M> Annotations<'a, M> {
 
     /// Renders the snippet with the annotations.
     ///
+    /// If no annotations have been added, this outputs nothing.
+    ///
     /// `max_line_no_width` should be at least
-    /// [`self.max_line_no_width()`](Self::max_line_no_width), but
-    /// it can be greater to align the margin of multiple snippets.
+    /// [`self.max_line_no_width()`](Self::max_line_no_width), but it can be
+    /// greater to align vertically the margin of multiple snippets.
+    ///
+    /// `max_fill_after_first` and `max_fill_before_last` control how many
+    /// *unannotated* lines are rendered when there is a gap between two
+    /// annotated lines:
+    /// * If the gap size is greater than `max_fill_after_first +
+    ///   max_fill_before_last`, the renderer outputs only the first
+    ///   `max_fill_after_first` lines after the previous annotated line, then
+    ///   a dotted separator line, then the last `max_fill_before_last` lines
+    ///   before the next annotated line.
+    /// * Otherwise, all lines in the gap are rendered.
     pub fn render<O: Output<M>>(
         &self,
         max_line_no_width: usize,
