@@ -1,65 +1,30 @@
-use alloc::format;
-use alloc::string::String;
+use super::{ControlCharStyle, Snippet};
 
-use super::Snippet;
+/// Style for how invalid UTF-8 sequences are represented.
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum InvalidUtf8SeqStyle {
+    /// Represent invalid UTF-8 as the replacement character U+FFFD (`�`).
+    Replacement,
+    /// Represent invalid UTF-8 as hexadecimal byte values, each byte as `<XX>`.
+    ///
+    /// This is useful when you want the invalid bytes to be visible and
+    /// "countable" in the rendered output.
+    Hexadecimal,
+}
 
 impl Snippet {
     /// Creates a snippet from a UTF-8 (possibly broken) source.
     ///
     /// "\n" and "\r\n" are treated as line breaks.
-    ///
-    /// Control characters (except tabs and line breaks) are represented as
-    /// `<XXXX>` as alternative text. Each byte of invalid UTF-8 sequences is
-    /// represented as `<XX>` as alternative text.
-    pub fn build_from_utf8(start_line: usize, source: &[u8], tab_width: usize) -> Self {
-        Self::build_from_utf8_ex(
-            start_line,
-            source,
-            |chr| {
-                if chr == '\t' {
-                    (false, " ".repeat(tab_width))
-                } else {
-                    (true, format!("<{:04X}>", u32::from(chr)))
-                }
-            },
-            |bytes| {
-                let &[byte] = bytes else {
-                    unreachable!();
-                };
-                (true, format!("<{byte:02X}>"))
-            },
-            true,
-        )
-    }
-
-    /// Creates a snippet from a UTF-8 (possibly broken) source.
-    ///
-    /// "\n" and "\r\n" are treated as line breaks.
-    ///
-    /// `on_control` is used to handle ASCII control characters (that are not
-    /// line breaks). `on_invalid` and `invalid_multi` are used to handle
-    /// invalid UTF-8 sequences.
-    ///
-    /// When `invalid_multi` is `true`, `on_invalid` is called for each byte
-    /// of an invalid UTF-8 sequence. Otherwise, `on_invalid` is called once
-    /// with the entire sequence.
-    ///
-    /// `on_control` and `on_invalid` also return a boolean to indicate if the
-    /// text should be rendered as alternative.
-    ///
-    /// `on_control` and `on_invalid` should not return a string that contains
-    /// tabs, line breaks or any other control characters.
-    pub fn build_from_utf8_ex<FnCtrl, FnInv>(
+    pub fn build_from_utf8(
         start_line: usize,
         source: &[u8],
-        mut on_control: FnCtrl,
-        mut on_invalid: FnInv,
-        invalid_multi: bool,
-    ) -> Self
-    where
-        FnCtrl: FnMut(char) -> (bool, String),
-        FnInv: FnMut(&[u8]) -> (bool, String),
-    {
+        tab_width: usize,
+        control_char_style: ControlCharStyle,
+        control_char_alt: bool,
+        invalid_seq_style: InvalidUtf8SeqStyle,
+        invalid_seq_alt: bool,
+    ) -> Self {
         let mut snippet = Snippet::builder(start_line);
 
         for source_chunk in source.utf8_chunks() {
@@ -73,21 +38,31 @@ impl Snippet {
                 } else if !chr.is_control() {
                     snippet.push_char(chr, chr.len_utf8(), false);
                 } else {
-                    let (alt, text) = on_control(chr);
-                    snippet.push_str(&text, chr.len_utf8(), alt);
+                    let chr_len = chr.len_utf8();
+                    let is_control = snippet.maybe_push_control_char(
+                        chr,
+                        chr_len,
+                        tab_width,
+                        control_char_style,
+                        control_char_alt,
+                    );
+                    if !is_control {
+                        snippet.push_char(chr, chr_len, false);
+                    }
                 }
             }
 
             let invalid_utf8 = source_chunk.invalid();
             if !invalid_utf8.is_empty() {
-                if invalid_multi {
-                    for &byte in invalid_utf8.iter() {
-                        let (alt, text) = on_invalid(&[byte]);
-                        snippet.push_str(&text, 1, alt);
+                match invalid_seq_style {
+                    InvalidUtf8SeqStyle::Replacement => {
+                        snippet.push_char('\u{FFFD}', invalid_utf8.len(), invalid_seq_alt);
                     }
-                } else {
-                    let (alt, text) = on_invalid(invalid_utf8);
-                    snippet.push_str(&text, invalid_utf8.len(), alt);
+                    InvalidUtf8SeqStyle::Hexadecimal => {
+                        for &byte in invalid_utf8.iter() {
+                            snippet.push_fmt(format_args!("<{byte:02X}>"), 1, invalid_seq_alt);
+                        }
+                    }
                 }
             }
         }
@@ -98,11 +73,8 @@ impl Snippet {
 
 #[cfg(test)]
 mod tests {
-    use alloc::format;
-    use alloc::string::String;
-
     use crate::range_set::RangeSet;
-    use crate::snippet::{Snippet, SnippetLine, UnitMeta};
+    use crate::snippet::{ControlCharStyle, InvalidUtf8SeqStyle, Snippet, SnippetLine, UnitMeta};
 
     fn meta(width: u8, len: u8) -> UnitMeta {
         UnitMeta::new(width, len)
@@ -115,8 +87,15 @@ mod tests {
     #[test]
     fn test_simple_1() {
         let source = b"123\n456";
-        let snippet =
-            Snippet::build_from_utf8_ex(0, source, |_| unreachable!(), |_| unreachable!(), false);
+        let snippet = Snippet::build_from_utf8(
+            0,
+            source,
+            4,
+            ControlCharStyle::Hexadecimal,
+            true,
+            InvalidUtf8SeqStyle::Hexadecimal,
+            true,
+        );
 
         assert_eq!(snippet.start_line, 0);
         assert_eq!(
@@ -150,8 +129,15 @@ mod tests {
     #[test]
     fn test_simple_2() {
         let source = b"123\n456\n";
-        let snippet =
-            Snippet::build_from_utf8_ex(0, source, |_| unreachable!(), |_| unreachable!(), false);
+        let snippet = Snippet::build_from_utf8(
+            0,
+            source,
+            4,
+            ControlCharStyle::Hexadecimal,
+            true,
+            InvalidUtf8SeqStyle::Hexadecimal,
+            true,
+        );
 
         assert_eq!(snippet.start_line, 0);
         assert_eq!(
@@ -190,8 +176,15 @@ mod tests {
     #[test]
     fn test_non_ascii_chr() {
         let source = b"123\n4\xC3\xBF6";
-        let snippet =
-            Snippet::build_from_utf8_ex(0, source, |_| unreachable!(), |_| unreachable!(), false);
+        let snippet = Snippet::build_from_utf8(
+            0,
+            source,
+            4,
+            ControlCharStyle::Hexadecimal,
+            true,
+            InvalidUtf8SeqStyle::Hexadecimal,
+            true,
+        );
 
         assert_eq!(snippet.start_line, 0);
         assert_eq!(
@@ -226,7 +219,15 @@ mod tests {
     #[test]
     fn test_control_chr() {
         let source = b"123\n4\x006";
-        let snippet = Snippet::build_from_utf8(0, source, 4);
+        let snippet = Snippet::build_from_utf8(
+            0,
+            source,
+            4,
+            ControlCharStyle::Hexadecimal,
+            true,
+            InvalidUtf8SeqStyle::Hexadecimal,
+            true,
+        );
 
         assert_eq!(snippet.start_line, 0);
         assert_eq!(
@@ -237,8 +238,8 @@ mod tests {
                     alts: RangeSet::new(),
                 },
                 SnippetLine {
-                    text: "4<0000>6".into(),
-                    alts: RangeSet::from(1..=6),
+                    text: "4<00>6".into(),
+                    alts: RangeSet::from(1..=4),
                 },
             ],
         );
@@ -251,7 +252,7 @@ mod tests {
                 meta(1, 1),
                 meta(1, 0),
                 meta(1, 1),
-                meta(6, 6),
+                meta(4, 4),
                 meta(1, 1),
             ],
         );
@@ -260,12 +261,14 @@ mod tests {
     #[test]
     fn test_crlf() {
         let source = b"123\r\n4\r6\r\n";
-        let snippet = Snippet::build_from_utf8_ex(
+        let snippet = Snippet::build_from_utf8(
             0,
             source,
-            |chr| (true, format!("<{:02X}>", chr as u8)),
-            |_| unreachable!(),
-            false,
+            4,
+            ControlCharStyle::Hexadecimal,
+            true,
+            InvalidUtf8SeqStyle::Hexadecimal,
+            true,
         );
 
         assert_eq!(snippet.start_line, 0);
@@ -307,8 +310,15 @@ mod tests {
     #[test]
     fn test_fullwidth() {
         let source = b"1\xEF\xBC\x923\n456";
-        let snippet =
-            Snippet::build_from_utf8_ex(0, source, |_| unreachable!(), |_| unreachable!(), false);
+        let snippet = Snippet::build_from_utf8(
+            0,
+            source,
+            4,
+            ControlCharStyle::Hexadecimal,
+            true,
+            InvalidUtf8SeqStyle::Hexadecimal,
+            true,
+        );
 
         assert_eq!(snippet.start_line, 0);
         assert_eq!(
@@ -344,7 +354,15 @@ mod tests {
     #[test]
     fn test_tabs() {
         let source = b"123\n\t456";
-        let snippet = Snippet::build_from_utf8(0, source, 4);
+        let snippet = Snippet::build_from_utf8(
+            0,
+            source,
+            4,
+            ControlCharStyle::Hexadecimal,
+            true,
+            InvalidUtf8SeqStyle::Hexadecimal,
+            true,
+        );
 
         assert_eq!(snippet.start_line, 0);
         assert_eq!(
@@ -377,66 +395,15 @@ mod tests {
     }
 
     #[test]
-    fn test_invalid_single() {
+    fn test_invalid() {
         let source = b"1\xF1\x803\n456";
-        let snippet = Snippet::build_from_utf8_ex(
+        let snippet = Snippet::build_from_utf8(
             0,
             source,
-            |_| unreachable!(),
-            |bytes| {
-                let mut s = String::new();
-                s.push('<');
-                for &byte in bytes {
-                    s.push_str(&format!("{byte:02X}"));
-                }
-                s.push('>');
-                (true, s)
-            },
-            false,
-        );
-
-        assert_eq!(snippet.start_line, 0);
-        assert_eq!(
-            snippet.lines,
-            [
-                SnippetLine {
-                    text: "1<F180>3".into(),
-                    alts: RangeSet::from(1..=6),
-                },
-                SnippetLine {
-                    text: "456".into(),
-                    alts: RangeSet::new(),
-                },
-            ],
-        );
-        assert_eq!(snippet.line_map, [5]);
-        assert_eq!(
-            snippet.metas,
-            [
-                meta(1, 1),
-                meta(6, 6),
-                meta_extra(),
-                meta(1, 1),
-                meta(1, 0),
-                meta(1, 1),
-                meta(1, 1),
-                meta(1, 1),
-            ],
-        );
-    }
-
-    #[test]
-    fn test_invalid_multi() {
-        let source = b"1\xF1\x803\n456";
-        let snippet = Snippet::build_from_utf8_ex(
-            0,
-            source,
-            |_| unreachable!(),
-            |bytes| {
-                assert_eq!(bytes.len(), 1);
-                let s = format!("<{:02X}>", bytes[0]);
-                (true, s)
-            },
+            4,
+            ControlCharStyle::Hexadecimal,
+            true,
+            InvalidUtf8SeqStyle::Hexadecimal,
             true,
         );
 
@@ -468,30 +435,5 @@ mod tests {
                 meta(1, 1),
             ],
         );
-    }
-
-    #[test]
-    fn test_large_meta() {
-        let source = b"1\xFF2";
-        let snippet = Snippet::build_from_utf8_ex(
-            0,
-            source,
-            |_| unreachable!(),
-            |_| (true, "\u{A7}".repeat(150)),
-            false,
-        );
-
-        assert_eq!(snippet.start_line, 0);
-        assert_eq!(
-            snippet.lines,
-            [SnippetLine {
-                text: format!("1{}2", "\u{A7}".repeat(150)).into_boxed_str(),
-                alts: RangeSet::from(1..=300),
-            }],
-        );
-        assert_eq!(snippet.line_map, []);
-        assert_eq!(snippet.metas, [meta(1, 1), meta(0x7F, 0x7F), meta(1, 1)]);
-        assert_eq!(snippet.large_widths, [(1, 150)]);
-        assert_eq!(snippet.large_utf8_lens, [(1, 300)]);
     }
 }
