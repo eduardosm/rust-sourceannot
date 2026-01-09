@@ -6,20 +6,20 @@
 
 - `Annotations::render` now passes output to a new `Output` trait instead of
   returning a `Vec`.
+- `SourceSnippet` is now a trait that can be implemented by different type of
+  sources (`Utf8SourceSnippet`, `Latin1SourceSnippet`).
 - A new `std` feature, which depends on libstd has been enabled. Default features
   need to be disabled to support `no_std`.
 
 ### Fixed
 
 - Fixed handling of spans that point to line breaks.
-- Allow `on_control` and `on_invalid` (from `SourceSnippet::build_from_utf8_ex`
-  and `SourceSnippet::build_from_latin1_ex`) to return strings with a UTF-8 length
-  larger than 127 bytes or a width larger than 127.
 - Line numbers in margins are now correctly aligned to the right.
 
 ### Changed
 
 - `Annotations::render()` does not require `M: Clone` anymore.
+- Documentation improvements.
 
 ### Other
 

@@ -2,19 +2,44 @@ use alloc::collections::BTreeMap;
 use alloc::string::String;
 use alloc::{vec, vec::Vec};
 
-use crate::snippet::SourceSpan;
+use crate::snippet::SourceSnippetLine;
 use crate::{AnnotStyle, MainStyle, Output, SourceSnippet};
 
-/// A collection of annotations for a source snippet.
-#[derive(Debug)]
+/// A collection of annotations attached to a [`SourceSnippet`].
+///
+/// # Spans
+///
+/// Each annotation is a [`Range<usize>`](core::ops::Range) whose indices are
+/// positions in the snippet's *source unit* sequence (as defined by the concrete
+/// [`SourceSnippet`] implementation). For example,
+/// [`Utf8SourceSnippet`](crate::Utf8SourceSnippet) uses byte offsets into the
+/// original UTF-8 sequence.
+///
+/// Spans are half-open: `start` is inclusive, `end` is exclusive.
+/// Zero-length spans (`start == end`) are allowed and render as a single caret
+/// pointing at that position.
+///
+/// # Labels
+///
+/// A label is stored as a list of `(String, M)` fragments. This allows
+/// attaching different metadata to different parts of the label (for example,
+/// to highlight a keyword inside the label). If you do not need per-fragment
+/// metadata, you can use a single-element vector.
+///
+/// Empty label fragments are allowed; the renderer will simply output nothing
+/// for them (just the carets or connector lines of the annotation).
+///
+/// # Example
+///
+/// See the [crate-level](crate#example) documentation.
 pub struct Annotations<'a, M> {
-    snippet: &'a SourceSnippet,
+    snippet: &'a dyn SourceSnippet,
+    first_line_no: usize,
     main_style: MainStyle<M>,
     annots: Vec<Annotation<M>>,
     max_pos: usize,
 }
 
-#[derive(Debug)]
 struct Annotation<M> {
     span: core::ops::Range<usize>,
     style: AnnotStyle<M>,
@@ -22,15 +47,37 @@ struct Annotation<M> {
 }
 
 impl<'a, M> Annotations<'a, M> {
-    pub fn new(snippet: &'a SourceSnippet, main_style: MainStyle<M>) -> Self {
+    /// Creates a new annotation collection for `snippet`.
+    ///
+    /// `first_line_no` controls the line number shown for the snippet's first
+    /// line (line index `0`). You usually want to use `1` when the snippet
+    /// represents a whole source file.
+    pub fn new(
+        snippet: &'a dyn SourceSnippet,
+        first_line_no: usize,
+        main_style: MainStyle<M>,
+    ) -> Self {
         Self {
             snippet,
+            first_line_no,
             main_style,
             annots: Vec::new(),
             max_pos: 0,
         }
     }
 
+    /// Adds an annotation span with the given style and label.
+    ///
+    /// - `span` is a half-open range (`start` inclusive, `end` exclusive)
+    ///   expressed in the snippet's source units (see [`Annotations`] docs).
+    /// - `label` is a list of text fragments with associated metadata; these
+    ///   fragments are concatenated when rendered.
+    ///
+    /// # Panics
+    ///
+    /// This method assumes `span.start <= span.end` and that both ends refer
+    /// to valid positions in the underlying snippet. Invalid spans may panic
+    /// during rendering.
     pub fn add_annotation(
         &mut self,
         span: core::ops::Range<usize>,
@@ -42,16 +89,30 @@ impl<'a, M> Annotations<'a, M> {
     }
 
     pub fn max_line_no_width(&self) -> usize {
-        let (max_line_i, _) = self.snippet.get_line_col(self.max_pos);
-        let max_line_no = max_line_i + self.snippet.start_line();
+        let (max_line_i, _) = self.snippet.line_map().pos_to_line_col(self.max_pos);
+        let max_line_no = max_line_i + self.first_line_no;
         (max_line_no.max(1).ilog10() + 1) as usize
     }
 
     /// Renders the snippet with the annotations.
     ///
-    /// `max_line_no_width` should be at least
-    /// [`self.max_line_no_width()`](Self::max_line_no_width), but
-    /// it can be greater to align the margin of multiple snippets.
+    /// If no annotations have been added, this outputs nothing.
+    ///
+    /// ## Parameters
+    ///
+    /// - `max_line_no_width` should be at least
+    ///   [`self.max_line_no_width()`](Self::max_line_no_width), but it can be
+    ///   greater to align vertically the margin of multiple snippets.
+    /// - `max_fill_after_first` and `max_fill_before_last` control how many
+    ///   *unannotated* lines are rendered when there is a gap between two
+    ///   annotated lines:
+    ///
+    ///   - If the gap size is greater than `max_fill_after_first +
+    ///     max_fill_before_last`, the renderer outputs only the first
+    ///     `max_fill_after_first` lines after the previous annotated line, then
+    ///     a dotted separator line, then the last `max_fill_before_last` lines
+    ///     before the next annotated line.
+    ///   - Otherwise, all lines in the gap are rendered.
     pub fn render<O: Output<M>>(
         &self,
         max_line_no_width: usize,
@@ -69,7 +130,7 @@ impl<'a, M> Annotations<'a, M> {
     }
 
     fn pre_process(&'a self) -> PreProcAnnots<'a, M> {
-        let mut pre_proc = PreProcAnnots::new(self.snippet, &self.main_style);
+        let mut pre_proc = PreProcAnnots::new(self.snippet, self.first_line_no, &self.main_style);
         for annot in self.annots.iter() {
             pre_proc.add_annotation(annot.span.clone(), &annot.style, &annot.label);
         }
@@ -77,29 +138,30 @@ impl<'a, M> Annotations<'a, M> {
     }
 }
 
-/// A collection of annotations for a source snippet.
-#[derive(Debug)]
 struct PreProcAnnots<'a, M> {
-    snippet: &'a SourceSnippet,
+    snippet: &'a dyn SourceSnippet,
+    first_line_no: usize,
     main_style: &'a MainStyle<M>,
     annots: Vec<PreProcAnnot<'a, M>>,
     lines: BTreeMap<usize, LineData>,
     num_ml_slots: usize,
 }
 
-#[derive(Debug)]
 struct PreProcAnnot<'a, M> {
     style: &'a AnnotStyle<M>,
-    span: SourceSpan,
+    start_line: usize,
+    start_col: usize,
+    end_line: usize,
+    end_col: usize,
     label: &'a [(String, M)],
     sl_overlaps: bool,
     ml_slot: usize,
 }
 
-#[derive(Debug)]
 struct LineData {
     // "sl" stands for single line
     // "ml" stands for multi line
+    snippet: SourceSnippetLine,
     sl_annots: Vec<usize>,
     ml_annots_starts: Vec<usize>,
     ml_annots_ends: Vec<usize>,
@@ -108,9 +170,14 @@ struct LineData {
 }
 
 impl<'a, M> PreProcAnnots<'a, M> {
-    fn new(snippet: &'a SourceSnippet, main_style: &'a MainStyle<M>) -> Self {
+    fn new(
+        snippet: &'a dyn SourceSnippet,
+        first_line_no: usize,
+        main_style: &'a MainStyle<M>,
+    ) -> Self {
         Self {
             snippet,
+            first_line_no,
             main_style,
             annots: Vec::new(),
             lines: BTreeMap::new(),
@@ -120,55 +187,73 @@ impl<'a, M> PreProcAnnots<'a, M> {
 
     fn add_annotation(
         &mut self,
-        span: core::ops::Range<usize>,
+        src_span: core::ops::Range<usize>,
         style: &'a AnnotStyle<M>,
         label: &'a [(String, M)],
     ) {
-        let mut annot = PreProcAnnot {
-            style,
-            span: self.snippet.convert_span(span.start, span.end),
-            label,
-            sl_overlaps: false,
-            ml_slot: usize::MAX,
-        };
+        let (start_line, start_col_src) = self.snippet.line_map().pos_to_line_col(src_span.start);
+
+        let start_line_data = self
+            .lines
+            .entry(start_line)
+            .or_insert_with(|| Self::create_line_data(self.snippet, start_line));
+
+        let (start_col, start_col_utf8) = start_line_data.snippet.calc_start_col(start_col_src);
+
+        let end_line;
+        let end_col_src;
+        if src_span.end > src_span.start {
+            let end_col_src_excl;
+            (end_line, end_col_src_excl) =
+                self.snippet.line_map().pos_to_line_col(src_span.end - 1);
+            end_col_src = end_col_src_excl + 1;
+        } else {
+            // zero length span
+            end_line = start_line;
+            end_col_src = start_col_src;
+        }
+
         let annot_i = self.annots.len();
 
-        let line_data = self
-            .lines
-            .entry(annot.span.start_line)
-            .or_insert_with(|| Self::create_line_data(self.snippet, annot.span.start_line));
-        if annot.span.start_line == annot.span.end_line {
-            // Single line
+        let mut end_col;
+        let mut sl_overlaps = false;
+        let mut ml_slot = usize::MAX;
 
-            // Render one caret for zero length spans
-            annot.span.end_col = annot.span.end_col.max(annot.span.start_col + 1);
+        if start_line == end_line {
+            // Single line
+            let line_data = start_line_data;
+
+            let end_col_utf8;
+            (end_col, end_col_utf8) = line_data.snippet.calc_end_col(end_col_src);
+            // Render at least one caret
+            if end_col == start_col {
+                end_col += 1;
+            }
 
             // Check if annotation overlaps with other single line annotations
             for &prev_annot_i in line_data.sl_annots.iter() {
                 let other_annot = &mut self.annots[prev_annot_i];
-                if annot.span.start_col.max(other_annot.span.start_col)
-                    < annot.span.end_col.min(other_annot.span.end_col)
-                {
-                    annot.sl_overlaps = true;
+                if start_col.max(other_annot.start_col) < end_col.min(other_annot.end_col) {
+                    sl_overlaps = true;
                     other_annot.sl_overlaps = true;
                 }
             }
 
             // Apply caret styles
-            if line_data.sl_carets.len() <= annot.span.start_col {
-                line_data.sl_carets.resize(annot.span.start_col, usize::MAX);
-                line_data.sl_carets.resize(annot.span.end_col, annot_i);
-            } else if line_data.sl_carets.len() <= annot.span.end_col {
-                line_data.sl_carets[annot.span.start_col..]
+            if line_data.sl_carets.len() <= start_col {
+                line_data.sl_carets.resize(start_col, usize::MAX);
+                line_data.sl_carets.resize(end_col, annot_i);
+            } else if line_data.sl_carets.len() <= end_col {
+                line_data.sl_carets[start_col..]
                     .iter_mut()
                     .for_each(|sl_caret| {
                         if *sl_caret == usize::MAX {
                             *sl_caret = annot_i;
                         }
                     });
-                line_data.sl_carets.resize(annot.span.end_col, annot_i);
+                line_data.sl_carets.resize(end_col, annot_i);
             } else {
-                line_data.sl_carets[annot.span.start_col..annot.span.end_col]
+                line_data.sl_carets[start_col..end_col]
                     .iter_mut()
                     .for_each(|sl_caret| {
                         if *sl_caret == usize::MAX {
@@ -178,59 +263,57 @@ impl<'a, M> PreProcAnnots<'a, M> {
             }
 
             // Apply line text styles
-            for chr_style in line_data.styles[annot.span.start_utf8..annot.span.end_utf8].iter_mut()
-            {
+            for chr_style in line_data.styles[start_col_utf8..end_col_utf8].iter_mut() {
                 if chr_style.0 == usize::MAX {
                     chr_style.0 = annot_i;
                 }
             }
 
-            Self::insert_annot_sorted(&self.annots, &annot, annot_i, &mut line_data.sl_annots);
+            Self::insert_annot_sorted(&self.annots, start_col, annot_i, &mut line_data.sl_annots);
         } else {
             // Multi line
-            for chr_style in line_data.styles[annot.span.start_utf8..].iter_mut() {
+            for chr_style in start_line_data.styles[start_col_utf8..].iter_mut() {
                 if chr_style.0 == usize::MAX {
                     chr_style.0 = annot_i;
                 }
             }
             Self::insert_annot_sorted(
                 &self.annots,
-                &annot,
+                start_col,
                 annot_i,
-                &mut line_data.ml_annots_starts,
+                &mut start_line_data.ml_annots_starts,
             );
 
             let end_line_data = self
                 .lines
-                .entry(annot.span.end_line)
-                .or_insert_with(|| Self::create_line_data(self.snippet, annot.span.end_line));
+                .entry(end_line)
+                .or_insert_with(|| Self::create_line_data(self.snippet, end_line));
+            let end_col_utf8;
+            (end_col, end_col_utf8) = end_line_data.snippet.calc_end_col(end_col_src);
 
-            for chr_style in end_line_data.styles[..annot.span.end_utf8].iter_mut() {
+            for chr_style in end_line_data.styles[..end_col_utf8].iter_mut() {
                 if chr_style.0 == usize::MAX {
                     chr_style.0 = annot_i;
                 }
             }
             Self::insert_annot_sorted(
                 &self.annots,
-                &annot,
+                start_col,
                 annot_i,
                 &mut end_line_data.ml_annots_ends,
             );
 
-            let starts_at_col_0 = annot.span.start_col == 0;
+            let starts_at_col_0 = start_col == 0;
 
             let mut used_slots = Vec::new();
             for other_annot in self.annots.iter() {
-                if other_annot.span.start_line == other_annot.span.end_line {
+                if other_annot.start_line == other_annot.end_line {
                     continue;
                 }
-                let other_starts_at_col_0 = other_annot.span.start_col == 0;
-                let line_overlaps = (starts_at_col_0
-                    && other_annot.span.end_line == annot.span.start_line)
-                    || (other_starts_at_col_0
-                        && other_annot.span.start_line == annot.span.end_line)
-                    || annot.span.start_line.max(other_annot.span.start_line)
-                        < annot.span.end_line.min(other_annot.span.end_line);
+                let other_starts_at_col_0 = other_annot.start_col == 0;
+                let line_overlaps = (starts_at_col_0 && other_annot.end_line == start_line)
+                    || (other_starts_at_col_0 && other_annot.start_line == end_line)
+                    || start_line.max(other_annot.start_line) < end_line.min(other_annot.end_line);
 
                 if line_overlaps {
                     if other_annot.ml_slot >= used_slots.len() {
@@ -242,38 +325,45 @@ impl<'a, M> PreProcAnnots<'a, M> {
                 }
             }
 
-            annot.ml_slot = used_slots
+            ml_slot = used_slots
                 .iter()
                 .position(|used| !used)
                 .unwrap_or(used_slots.len());
-            self.num_ml_slots = self.num_ml_slots.max(annot.ml_slot + 1);
+            self.num_ml_slots = self.num_ml_slots.max(ml_slot + 1);
         }
 
-        self.annots.push(annot);
+        self.annots.push(PreProcAnnot {
+            style,
+            start_line,
+            start_col,
+            end_line,
+            end_col,
+            label,
+            sl_overlaps,
+            ml_slot,
+        });
     }
 
     fn insert_annot_sorted(
         annots: &[PreProcAnnot<'_, M>],
-        annot: &PreProcAnnot<'_, M>,
+        start_col: usize,
         annot_i: usize,
         dest: &mut Vec<usize>,
     ) {
         let insert_i = dest
-            .binary_search_by_key(&(annot.span.start_col, annot_i), |other_annot_i| {
+            .binary_search_by_key(&(start_col, annot_i), |other_annot_i| {
                 let other_annot = &annots[*other_annot_i];
-                (other_annot.span.start_col, *other_annot_i)
+                (other_annot.start_col, *other_annot_i)
             })
             .unwrap_err();
         dest.insert(insert_i, annot_i);
     }
 
-    fn create_line_data(snippet: &'a SourceSnippet, line_i: usize) -> LineData {
-        let snippet_line = snippet.line(line_i);
-        let mut styles = vec![(usize::MAX, false); snippet_line.text.len()];
-        for alt_range in snippet_line.alts.ranges() {
-            styles[alt_range].fill((usize::MAX, true));
-        }
+    fn create_line_data(snippet: &'a dyn SourceSnippet, line_i: usize) -> LineData {
+        let snippet_line = snippet.get_line(line_i);
+        let styles = snippet_line.gather_styles();
         LineData {
+            snippet: snippet_line,
             sl_annots: Vec::new(),
             ml_annots_starts: Vec::new(),
             ml_annots_ends: Vec::new(),
@@ -293,8 +383,6 @@ impl<'a, M> PreProcAnnots<'a, M> {
             return Ok(());
         }
 
-        let start_line = self.snippet.start_line();
-
         // Renders the left margin of a line:
         // with line number:    `123 │ `
         // without line number: `    │ `
@@ -302,7 +390,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
         let put_margin = |line_i: Option<usize>, is_dot: bool, out: &mut O| {
             if let Some(ref margin_style) = self.main_style.margin {
                 if let Some(line_i) = line_i {
-                    let line_no = line_i + start_line;
+                    let line_no = line_i + self.first_line_no;
                     let line_no_width = (line_no.max(1).ilog10() + 1) as usize;
                     for _ in 0..(max_line_no_width - line_no_width) {
                         out.put_char(' ', &self.main_style.spaces_meta)?;
@@ -327,8 +415,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
         };
 
         // Renders the text of a line
-        let put_line_text = |line_i: usize, styles: &[(usize, bool)], out: &mut O| {
-            let line = self.snippet.line(line_i);
+        let put_line_text = |line: &SourceSnippetLine, styles: &[(usize, bool)], out: &mut O| {
             assert_eq!(styles.len(), line.text.len());
             let mut chr_i = 0;
             while chr_i < line.text.len() {
@@ -350,8 +437,8 @@ impl<'a, M> PreProcAnnots<'a, M> {
             Ok(())
         };
 
-        let put_fill_line_text = |line_i: usize, out: &mut O| {
-            let line = self.snippet.line(line_i);
+        let put_fill_line_text = |line: &SourceSnippetLine, out: &mut O| {
+            // FIXME: handle alts
             out.put_str(&line.text, &self.main_style.text_normal_meta)?;
             out.put_char('\n', &self.main_style.spaces_meta)?;
             Ok(())
@@ -434,7 +521,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
         let put_sl_verticals = |sl_annots: &[usize], out: &mut O| {
             let mut col_cursor = 0;
             for &prev_annot_i in sl_annots.iter() {
-                let start_col = self.annots[prev_annot_i].span.start_col;
+                let start_col = self.annots[prev_annot_i].start_col;
                 if start_col < col_cursor {
                     continue;
                 }
@@ -460,24 +547,27 @@ impl<'a, M> PreProcAnnots<'a, M> {
                 if (line_i - prev_line_i - 1) > (max_fill_after_first + max_fill_before_last) {
                     for i in 0..max_fill_after_first {
                         let line_i = prev_line_i + 1 + i;
+                        let line = self.snippet.get_line(line_i);
                         put_margin(Some(line_i), false, &mut out)?;
                         put_slots_simple(&ml_slots, &mut out)?;
-                        put_fill_line_text(line_i, &mut out)?;
+                        put_fill_line_text(&line, &mut out)?;
                     }
                     put_margin(None, true, &mut out)?;
                     put_slots_simple(&ml_slots, &mut out)?;
                     out.put_char('\n', &self.main_style.spaces_meta)?;
                     for i in (0..max_fill_before_last).rev() {
                         let line_i = line_i - 1 - i;
+                        let line = self.snippet.get_line(line_i);
                         put_margin(Some(line_i), false, &mut out)?;
                         put_slots_simple(&ml_slots, &mut out)?;
-                        put_fill_line_text(line_i, &mut out)?;
+                        put_fill_line_text(&line, &mut out)?;
                     }
                 } else {
                     for line_i in (prev_line_i + 1)..line_i {
+                        let line = self.snippet.get_line(line_i);
                         put_margin(Some(line_i), false, &mut out)?;
                         put_slots_simple(&ml_slots, &mut out)?;
-                        put_fill_line_text(line_i, &mut out)?;
+                        put_fill_line_text(&line, &mut out)?;
                     }
                 }
             }
@@ -485,7 +575,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
             // Handle multi line annotations that start at the beginning of the line
             for &annot_i in line_data.ml_annots_starts.iter() {
                 let annot = &self.annots[annot_i];
-                if annot.span.start_col != 0 {
+                if annot.start_col != 0 {
                     continue;
                 }
 
@@ -497,7 +587,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
 
             put_margin(Some(line_i), false, &mut out)?;
             put_slots_with_short_start(&ml_slots, &is_slot_start, &mut out)?;
-            put_line_text(line_i, &line_data.styles, &mut out)?;
+            put_line_text(&line_data.snippet, &line_data.styles, &mut out)?;
 
             is_slot_start.fill(false);
 
@@ -563,7 +653,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
                 put_margin(None, false, &mut out)?;
                 put_slots_simple(&ml_slots, &mut out)?;
                 let col_cursor = put_sl_verticals(&with_verticals[..i], &mut out)?;
-                let start_col = self.annots[annot_i].span.start_col;
+                let start_col = self.annots[annot_i].start_col;
                 if col_cursor < start_col {
                     for _ in 0..(start_col - col_cursor) {
                         out.put_char(' ', &self.main_style.spaces_meta)?;
@@ -585,8 +675,8 @@ impl<'a, M> PreProcAnnots<'a, M> {
                 put_margin(None, false, &mut out)?;
                 put_slots_with_end(&ml_slots, annot.ml_slot, &annot.style.line_meta, &mut out)?;
 
-                if annot.span.end_col != 0 {
-                    for _ in 0..(annot.span.end_col - 1) {
+                if annot.end_col != 0 {
+                    for _ in 0..(annot.end_col - 1) {
                         out.put_char(self.main_style.horizontal_char, &annot.style.line_meta)?;
                     }
                 }
@@ -602,7 +692,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
             // (but not at the beginning of the line)
             for &annot_i in line_data.ml_annots_starts.iter() {
                 let annot = &self.annots[annot_i];
-                if annot.span.start_col == 0 {
+                if annot.start_col == 0 {
                     continue;
                 }
 
@@ -612,7 +702,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
                 assert!(ml_slots[annot.ml_slot].is_none());
                 ml_slots[annot.ml_slot] = Some(&annot.style.line_meta);
 
-                for _ in 0..annot.span.start_col {
+                for _ in 0..annot.start_col {
                     out.put_char(self.main_style.horizontal_char, &annot.style.line_meta)?;
                 }
                 out.put_char(annot.style.caret, &annot.style.line_meta)?;
