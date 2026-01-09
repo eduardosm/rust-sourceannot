@@ -7,7 +7,7 @@
 )]
 #![forbid(unsafe_code)]
 
-use sourceannot::{AnnotStyle, Annotations, MainStyle, MarginStyle, SourceSnippet};
+use sourceannot::{AnnotStyle, Annotations, MainStyle, MarginStyle, Snippet};
 
 const MAIN_STYLE: MainStyle<char> = MainStyle {
     margin: Some(MarginStyle {
@@ -63,7 +63,7 @@ impl sourceannot::Output<char> for &mut TestOutput {
 #[test]
 fn test_render_single_line_1() {
     let source = "1234\n5678\n90ab\ncdef\n";
-    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+    let snippet = Snippet::build_from_utf8(1, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(1..4, ANNOT_STYLE_1, vec![("test".into(), '1')]);
@@ -94,7 +94,7 @@ fn test_render_single_line_1() {
 #[test]
 fn test_render_single_line_2() {
     let source = "1234\n5678\n90ab\ncdef\n";
-    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+    let snippet = Snippet::build_from_utf8(1, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(1..4, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
@@ -132,7 +132,7 @@ fn test_render_single_line_2() {
 #[test]
 fn test_render_single_line_3() {
     let source = "1234\n5678\n90ab\ncdef\n";
-    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+    let snippet = Snippet::build_from_utf8(1, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(0..2, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
@@ -168,7 +168,7 @@ fn test_render_single_line_3() {
 #[test]
 fn test_render_single_line_4() {
     let source = "1234\n5678\n90ab\ncdef\n";
-    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+    let snippet = Snippet::build_from_utf8(1, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(1..2, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
@@ -206,7 +206,7 @@ fn test_render_single_line_4() {
 #[test]
 fn test_render_multi_line_1() {
     let source = "1234\n5678\n90ab\ncdef\n";
-    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+    let snippet = Snippet::build_from_utf8(1, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(1..12, ANNOT_STYLE_1, vec![("test".into(), '1')]);
@@ -243,7 +243,7 @@ fn test_render_multi_line_1() {
 #[test]
 fn test_render_multi_line_2() {
     let source = "1234\n5678\n90ab\ncdef\n";
-    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+    let snippet = Snippet::build_from_utf8(1, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(0..11, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
@@ -285,7 +285,7 @@ fn test_render_multi_line_2() {
 #[test]
 fn test_render_multi_line_3() {
     let source = "1234\n5678\n90ab\ncdef\n";
-    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+    let snippet = Snippet::build_from_utf8(1, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(0..18, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
@@ -327,7 +327,7 @@ fn test_render_multi_line_3() {
 #[test]
 fn test_render_multi_line_4() {
     let source = "1234\n5678\n90ab\ncdef\n";
-    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+    let snippet = Snippet::build_from_utf8(1, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(0..7, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
@@ -369,7 +369,7 @@ fn test_render_multi_line_4() {
 #[test]
 fn test_render_multi_line_crlf() {
     let source = "1234\r\n5678\r\n90ab\r\ncdef\r\n";
-    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+    let snippet = Snippet::build_from_utf8(1, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(1..14, ANNOT_STYLE_1, vec![("test".into(), '1')]);
@@ -406,7 +406,7 @@ fn test_render_multi_line_crlf() {
 #[test]
 fn test_render_single_line_within_multi_line() {
     let source = "1234\n5678\n90ab\ncdef\n";
-    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+    let snippet = Snippet::build_from_utf8(1, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(1..12, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
@@ -446,7 +446,7 @@ fn test_render_single_line_within_multi_line() {
 #[test]
 fn test_render_zero_len_span() {
     let source = "1234\n5678\n90ab\ncdef\n";
-    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+    let snippet = Snippet::build_from_utf8(1, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(1..1, ANNOT_STYLE_1, vec![("test".into(), '1')]);
@@ -477,7 +477,7 @@ fn test_render_zero_len_span() {
 #[test]
 fn test_render_tab() {
     let source = "1234\n\t5678\n";
-    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+    let snippet = Snippet::build_from_utf8(1, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(1..3, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
@@ -513,7 +513,7 @@ fn test_render_tab() {
 #[test]
 fn test_render_line_break_lf_1() {
     let source = "1234\n5678\n90ab\ncdef\n";
-    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+    let snippet = Snippet::build_from_utf8(1, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(4..5, ANNOT_STYLE_1, vec![("test".into(), '1')]);
@@ -544,7 +544,7 @@ fn test_render_line_break_lf_1() {
 #[test]
 fn test_render_line_break_lf_2() {
     let source = "1234\n5678\n90ab\ncdef\n";
-    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+    let snippet = Snippet::build_from_utf8(1, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(3..5, ANNOT_STYLE_1, vec![("test".into(), '1')]);
@@ -575,7 +575,7 @@ fn test_render_line_break_lf_2() {
 #[test]
 fn test_render_line_break_crlf_1() {
     let source = "1234\r\n5678\r\n90ab\r\ncdef\r\n";
-    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+    let snippet = Snippet::build_from_utf8(1, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(4..5, ANNOT_STYLE_1, vec![("test".into(), '1')]);
@@ -606,7 +606,7 @@ fn test_render_line_break_crlf_1() {
 #[test]
 fn test_render_line_break_crlf_2() {
     let source = "1234\r\n5678\r\n90ab\r\ncdef\r\n";
-    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+    let snippet = Snippet::build_from_utf8(1, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(5..6, ANNOT_STYLE_1, vec![("test".into(), '1')]);
@@ -637,7 +637,7 @@ fn test_render_line_break_crlf_2() {
 #[test]
 fn test_render_line_break_crlf_3() {
     let source = "1234\r\n5678\r\n90ab\r\ncdef\r\n";
-    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+    let snippet = Snippet::build_from_utf8(1, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(4..6, ANNOT_STYLE_1, vec![("test".into(), '1')]);
@@ -668,7 +668,7 @@ fn test_render_line_break_crlf_3() {
 #[test]
 fn test_render_line_break_crlf_4() {
     let source = "1234\r\n5678\r\n90ab\r\ncdef\r\n";
-    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+    let snippet = Snippet::build_from_utf8(1, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(3..5, ANNOT_STYLE_1, vec![("test".into(), '1')]);
@@ -699,7 +699,7 @@ fn test_render_line_break_crlf_4() {
 #[test]
 fn test_render_line_break_crlf_5() {
     let source = "1234\r\n5678\r\n90ab\r\ncdef\r\n";
-    let snippet = SourceSnippet::build_from_utf8(1, source.as_bytes(), 4);
+    let snippet = Snippet::build_from_utf8(1, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(3..6, ANNOT_STYLE_1, vec![("test".into(), '1')]);
@@ -730,7 +730,7 @@ fn test_render_line_break_crlf_5() {
 #[test]
 fn test_render_line_numbers() {
     let source = "1234\n5678\n90ab\ncdef\n";
-    let snippet = SourceSnippet::build_from_utf8(99, source.as_bytes(), 4);
+    let snippet = Snippet::build_from_utf8(99, source.as_bytes(), 4);
 
     let mut annots = Annotations::new(&snippet, MAIN_STYLE);
     annots.add_annotation(1..4, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);

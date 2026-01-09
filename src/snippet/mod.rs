@@ -7,27 +7,27 @@ use crate::range_set::RangeSet;
 
 /// A snippet of source code.
 #[derive(Clone, Debug)]
-pub struct SourceSnippet {
+pub struct Snippet {
     start_line: usize,
-    lines: Vec<SourceLine>,
+    lines: Vec<SnippetLine>,
     line_map: Vec<usize>,
-    metas: Vec<SourceUnitMeta>,
+    metas: Vec<UnitMeta>,
     large_widths: Vec<(usize, usize)>,
     large_utf8_lens: Vec<(usize, usize)>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct SourceLine {
+pub(crate) struct SnippetLine {
     pub(crate) text: Box<str>,
     pub(crate) alts: RangeSet<usize>,
 }
 
 #[derive(Clone, PartialEq, Eq)]
-struct SourceUnitMeta {
+struct UnitMeta {
     inner: u16,
 }
 
-impl core::fmt::Debug for SourceUnitMeta {
+impl core::fmt::Debug for UnitMeta {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         if self.is_extra() {
             f.write_str("SourceUnitMeta::extra()")
@@ -40,7 +40,7 @@ impl core::fmt::Debug for SourceUnitMeta {
     }
 }
 
-impl SourceUnitMeta {
+impl UnitMeta {
     #[inline]
     fn extra() -> Self {
         Self { inner: 0x8000 }
@@ -81,7 +81,7 @@ pub(crate) struct SourceSpan {
     pub(crate) end_utf8: usize,
 }
 
-impl SourceSnippet {
+impl Snippet {
     pub fn get_line_col(&self, pos: usize) -> (usize, usize) {
         let line = match self.line_map.binary_search(&pos) {
             Ok(i) => i + 1,
@@ -137,17 +137,17 @@ impl SourceSnippet {
     }
 
     #[inline]
-    pub(crate) fn line(&self, i: usize) -> &SourceLine {
+    pub(crate) fn line(&self, i: usize) -> &SnippetLine {
         &self.lines[i]
     }
 
     pub(crate) fn convert_span(&self, mut start: usize, mut end: usize) -> SourceSpan {
         end = end.max(start);
 
-        while self.metas.get(start).is_some_and(SourceUnitMeta::is_extra) {
+        while self.metas.get(start).is_some_and(UnitMeta::is_extra) {
             start -= 1;
         }
-        while self.metas.get(end).is_some_and(SourceUnitMeta::is_extra) {
+        while self.metas.get(end).is_some_and(UnitMeta::is_extra) {
             end += 1;
         }
         start = start.min(self.metas.len());
@@ -199,11 +199,11 @@ impl SourceSnippet {
 
 #[cfg(test)]
 mod tests {
-    use super::{SourceSnippet, SourceSpan};
+    use super::{Snippet, SourceSpan};
 
     #[test]
     fn test_get_line_col() {
-        let snippet = SourceSnippet::build_from_utf8(0, b"123\n456", 4);
+        let snippet = Snippet::build_from_utf8(0, b"123\n456", 4);
 
         assert_eq!(snippet.get_line_col(0), (0, 0));
         assert_eq!(snippet.get_line_col(1), (0, 1));
@@ -216,7 +216,7 @@ mod tests {
 
     #[test]
     fn test_get_line_col_large_meta() {
-        let snippet = SourceSnippet::build_from_utf8_ex(
+        let snippet = Snippet::build_from_utf8_ex(
             0,
             b"1\xFF2",
             |_| unreachable!(),
@@ -232,7 +232,7 @@ mod tests {
 
     #[test]
     fn test_convert_span_simple() {
-        let snippet = SourceSnippet::build_from_utf8(0, b"123\n456", 4);
+        let snippet = Snippet::build_from_utf8(0, b"123\n456", 4);
 
         assert_eq!(
             snippet.convert_span(0, 0),
@@ -359,7 +359,7 @@ mod tests {
 
     #[test]
     fn test_convert_span_multi_byte() {
-        let snippet = SourceSnippet::build_from_utf8(0, b"1\xEF\xBC\x923\n456", 4);
+        let snippet = Snippet::build_from_utf8(0, b"1\xEF\xBC\x923\n456", 4);
 
         assert_eq!(
             snippet.convert_span(0, 1),
@@ -464,7 +464,7 @@ mod tests {
 
     #[test]
     fn test_convert_span_invalid_utf8() {
-        let snippet = SourceSnippet::build_from_utf8(0, b"1\xFF2\n3", 4);
+        let snippet = Snippet::build_from_utf8(0, b"1\xFF2\n3", 4);
 
         assert_eq!(
             snippet.convert_span(0, 1),
@@ -514,7 +514,7 @@ mod tests {
 
     #[test]
     fn test_convert_span_large_meta() {
-        let snippet = SourceSnippet::build_from_utf8_ex(
+        let snippet = Snippet::build_from_utf8_ex(
             0,
             b"1\xFF2",
             |_| unreachable!(),

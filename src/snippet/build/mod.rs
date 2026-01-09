@@ -1,7 +1,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use super::{SourceLine, SourceSnippet, SourceUnitMeta};
+use super::{Snippet, SnippetLine, UnitMeta};
 use crate::range_set::RangeSet;
 
 mod latin1;
@@ -9,9 +9,9 @@ mod utf8;
 
 struct SourceSnippetBuilder {
     start_line: usize,
-    lines: Vec<SourceLine>,
+    lines: Vec<SnippetLine>,
     line_map: Vec<usize>,
-    metas: Vec<SourceUnitMeta>,
+    metas: Vec<UnitMeta>,
     large_widths: Vec<(usize, usize)>,
     large_utf8_lens: Vec<(usize, usize)>,
     current_line_text: String,
@@ -32,13 +32,13 @@ impl SourceSnippetBuilder {
         }
     }
 
-    fn finish(mut self) -> SourceSnippet {
-        self.lines.push(SourceLine {
+    fn finish(mut self) -> Snippet {
+        self.lines.push(SnippetLine {
             text: self.current_line_text.into_boxed_str(),
             alts: self.current_line_alts,
         });
 
-        SourceSnippet {
+        Snippet {
             start_line: self.start_line,
             lines: self.lines,
             line_map: self.line_map,
@@ -49,7 +49,7 @@ impl SourceSnippetBuilder {
     }
 
     fn next_line(&mut self, orig_len: usize) {
-        self.lines.push(SourceLine {
+        self.lines.push(SnippetLine {
             text: core::mem::take(&mut self.current_line_text).into_boxed_str(),
             alts: core::mem::take(&mut self.current_line_alts),
         });
@@ -101,14 +101,13 @@ impl SourceSnippetBuilder {
         } else {
             utf8_len as u8
         };
-        self.metas
-            .push(SourceUnitMeta::new(meta_width, meta_utf8_len));
+        self.metas.push(UnitMeta::new(meta_width, meta_utf8_len));
         for _ in 1..orig_len {
             // Each element of `self.metas` corresponds to a byte or unit in the
             // original source, so fill with "extras" for multi-unit chunks  (for
             // example, a multi-byte UTF-8 character, a multi-byte invalid UTF-8
             // sequence or a CRLF line break).
-            self.metas.push(SourceUnitMeta::extra());
+            self.metas.push(UnitMeta::extra());
         }
     }
 }

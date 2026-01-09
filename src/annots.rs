@@ -3,12 +3,12 @@ use alloc::string::String;
 use alloc::{vec, vec::Vec};
 
 use crate::snippet::SourceSpan;
-use crate::{AnnotStyle, MainStyle, Output, SourceSnippet};
+use crate::{AnnotStyle, MainStyle, Output, Snippet};
 
 /// A collection of annotations for a source snippet.
 #[derive(Debug)]
 pub struct Annotations<'a, M> {
-    snippet: &'a SourceSnippet,
+    snippet: &'a Snippet,
     main_style: MainStyle<M>,
     annots: Vec<Annotation<M>>,
     max_pos: usize,
@@ -22,7 +22,7 @@ struct Annotation<M> {
 }
 
 impl<'a, M> Annotations<'a, M> {
-    pub fn new(snippet: &'a SourceSnippet, main_style: MainStyle<M>) -> Self {
+    pub fn new(snippet: &'a Snippet, main_style: MainStyle<M>) -> Self {
         Self {
             snippet,
             main_style,
@@ -80,7 +80,7 @@ impl<'a, M> Annotations<'a, M> {
 /// A collection of annotations for a source snippet.
 #[derive(Debug)]
 struct PreProcAnnots<'a, M> {
-    snippet: &'a SourceSnippet,
+    snippet: &'a Snippet,
     main_style: &'a MainStyle<M>,
     annots: Vec<PreProcAnnot<'a, M>>,
     lines: BTreeMap<usize, LineData>,
@@ -108,7 +108,7 @@ struct LineData {
 }
 
 impl<'a, M> PreProcAnnots<'a, M> {
-    fn new(snippet: &'a SourceSnippet, main_style: &'a MainStyle<M>) -> Self {
+    fn new(snippet: &'a Snippet, main_style: &'a MainStyle<M>) -> Self {
         Self {
             snippet,
             main_style,
@@ -267,7 +267,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
         dest.insert(insert_i, annot_i);
     }
 
-    fn create_line_data(snippet: &'a SourceSnippet, line_i: usize) -> LineData {
+    fn create_line_data(snippet: &'a Snippet, line_i: usize) -> LineData {
         let snippet_line = snippet.line(line_i);
         let mut styles = vec![(usize::MAX, false); snippet_line.text.len()];
         for alt_range in snippet_line.alts.ranges() {

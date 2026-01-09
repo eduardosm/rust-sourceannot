@@ -2,9 +2,9 @@ use alloc::format;
 use alloc::string::String;
 
 use super::SourceSnippetBuilder;
-use crate::SourceSnippet;
+use crate::Snippet;
 
-impl SourceSnippet {
+impl Snippet {
     /// Creates a snippet from a UTF-8 (possibly broken) source.
     ///
     /// "\n" and "\r\n" are treated as line breaks.
@@ -108,36 +108,31 @@ mod tests {
     use alloc::string::String;
 
     use crate::range_set::RangeSet;
-    use crate::snippet::{SourceLine, SourceSnippet, SourceUnitMeta};
+    use crate::snippet::{Snippet, SnippetLine, UnitMeta};
 
-    fn meta(width: u8, len: u8) -> SourceUnitMeta {
-        SourceUnitMeta::new(width, len)
+    fn meta(width: u8, len: u8) -> UnitMeta {
+        UnitMeta::new(width, len)
     }
 
-    fn meta_extra() -> SourceUnitMeta {
-        SourceUnitMeta::extra()
+    fn meta_extra() -> UnitMeta {
+        UnitMeta::extra()
     }
 
     #[test]
     fn test_simple_1() {
         let source = b"123\n456";
-        let snippet = SourceSnippet::build_from_utf8_ex(
-            0,
-            source,
-            |_| unreachable!(),
-            |_| unreachable!(),
-            false,
-        );
+        let snippet =
+            Snippet::build_from_utf8_ex(0, source, |_| unreachable!(), |_| unreachable!(), false);
 
         assert_eq!(snippet.start_line, 0);
         assert_eq!(
             snippet.lines,
             [
-                SourceLine {
+                SnippetLine {
                     text: "123".into(),
                     alts: RangeSet::new(),
                 },
-                SourceLine {
+                SnippetLine {
                     text: "456".into(),
                     alts: RangeSet::new(),
                 },
@@ -161,27 +156,22 @@ mod tests {
     #[test]
     fn test_simple_2() {
         let source = b"123\n456\n";
-        let snippet = SourceSnippet::build_from_utf8_ex(
-            0,
-            source,
-            |_| unreachable!(),
-            |_| unreachable!(),
-            false,
-        );
+        let snippet =
+            Snippet::build_from_utf8_ex(0, source, |_| unreachable!(), |_| unreachable!(), false);
 
         assert_eq!(snippet.start_line, 0);
         assert_eq!(
             snippet.lines,
             [
-                SourceLine {
+                SnippetLine {
                     text: "123".into(),
                     alts: RangeSet::new(),
                 },
-                SourceLine {
+                SnippetLine {
                     text: "456".into(),
                     alts: RangeSet::new(),
                 },
-                SourceLine {
+                SnippetLine {
                     text: "".into(),
                     alts: RangeSet::new(),
                 },
@@ -206,23 +196,18 @@ mod tests {
     #[test]
     fn test_non_ascii_chr() {
         let source = b"123\n4\xC3\xBF6";
-        let snippet = SourceSnippet::build_from_utf8_ex(
-            0,
-            source,
-            |_| unreachable!(),
-            |_| unreachable!(),
-            false,
-        );
+        let snippet =
+            Snippet::build_from_utf8_ex(0, source, |_| unreachable!(), |_| unreachable!(), false);
 
         assert_eq!(snippet.start_line, 0);
         assert_eq!(
             snippet.lines,
             [
-                SourceLine {
+                SnippetLine {
                     text: "123".into(),
                     alts: RangeSet::new(),
                 },
-                SourceLine {
+                SnippetLine {
                     text: "4\u{FF}6".into(),
                     alts: RangeSet::new(),
                 },
@@ -247,17 +232,17 @@ mod tests {
     #[test]
     fn test_control_chr() {
         let source = b"123\n4\x006";
-        let snippet = SourceSnippet::build_from_utf8(0, source, 4);
+        let snippet = Snippet::build_from_utf8(0, source, 4);
 
         assert_eq!(snippet.start_line, 0);
         assert_eq!(
             snippet.lines,
             [
-                SourceLine {
+                SnippetLine {
                     text: "123".into(),
                     alts: RangeSet::new(),
                 },
-                SourceLine {
+                SnippetLine {
                     text: "4<0000>6".into(),
                     alts: RangeSet::from(1..=6),
                 },
@@ -281,7 +266,7 @@ mod tests {
     #[test]
     fn test_crlf() {
         let source = b"123\r\n4\r6\r\n";
-        let snippet = SourceSnippet::build_from_utf8_ex(
+        let snippet = Snippet::build_from_utf8_ex(
             0,
             source,
             |chr| (true, format!("<{:02X}>", chr as u8)),
@@ -293,15 +278,15 @@ mod tests {
         assert_eq!(
             snippet.lines,
             [
-                SourceLine {
+                SnippetLine {
                     text: "123".into(),
                     alts: RangeSet::new(),
                 },
-                SourceLine {
+                SnippetLine {
                     text: "4<0D>6".into(),
                     alts: RangeSet::from(1..=4),
                 },
-                SourceLine {
+                SnippetLine {
                     text: "".into(),
                     alts: RangeSet::new(),
                 },
@@ -328,23 +313,18 @@ mod tests {
     #[test]
     fn test_fullwidth() {
         let source = b"1\xEF\xBC\x923\n456";
-        let snippet = SourceSnippet::build_from_utf8_ex(
-            0,
-            source,
-            |_| unreachable!(),
-            |_| unreachable!(),
-            false,
-        );
+        let snippet =
+            Snippet::build_from_utf8_ex(0, source, |_| unreachable!(), |_| unreachable!(), false);
 
         assert_eq!(snippet.start_line, 0);
         assert_eq!(
             snippet.lines,
             [
-                SourceLine {
+                SnippetLine {
                     text: "1\u{FF12}3".into(),
                     alts: RangeSet::new(),
                 },
-                SourceLine {
+                SnippetLine {
                     text: "456".into(),
                     alts: RangeSet::new(),
                 },
@@ -370,17 +350,17 @@ mod tests {
     #[test]
     fn test_tabs() {
         let source = b"123\n\t456";
-        let snippet = SourceSnippet::build_from_utf8(0, source, 4);
+        let snippet = Snippet::build_from_utf8(0, source, 4);
 
         assert_eq!(snippet.start_line, 0);
         assert_eq!(
             snippet.lines,
             [
-                SourceLine {
+                SnippetLine {
                     text: "123".into(),
                     alts: RangeSet::new(),
                 },
-                SourceLine {
+                SnippetLine {
                     text: "    456".into(),
                     alts: RangeSet::new(),
                 },
@@ -405,7 +385,7 @@ mod tests {
     #[test]
     fn test_invalid_single() {
         let source = b"1\xF1\x803\n456";
-        let snippet = SourceSnippet::build_from_utf8_ex(
+        let snippet = Snippet::build_from_utf8_ex(
             0,
             source,
             |_| unreachable!(),
@@ -425,11 +405,11 @@ mod tests {
         assert_eq!(
             snippet.lines,
             [
-                SourceLine {
+                SnippetLine {
                     text: "1<F180>3".into(),
                     alts: RangeSet::from(1..=6),
                 },
-                SourceLine {
+                SnippetLine {
                     text: "456".into(),
                     alts: RangeSet::new(),
                 },
@@ -454,7 +434,7 @@ mod tests {
     #[test]
     fn test_invalid_multi() {
         let source = b"1\xF1\x803\n456";
-        let snippet = SourceSnippet::build_from_utf8_ex(
+        let snippet = Snippet::build_from_utf8_ex(
             0,
             source,
             |_| unreachable!(),
@@ -470,11 +450,11 @@ mod tests {
         assert_eq!(
             snippet.lines,
             [
-                SourceLine {
+                SnippetLine {
                     text: "1<F1><80>3".into(),
                     alts: RangeSet::from(1..=8),
                 },
-                SourceLine {
+                SnippetLine {
                     text: "456".into(),
                     alts: RangeSet::new(),
                 },
@@ -499,7 +479,7 @@ mod tests {
     #[test]
     fn test_large_meta() {
         let source = b"1\xFF2";
-        let snippet = SourceSnippet::build_from_utf8_ex(
+        let snippet = Snippet::build_from_utf8_ex(
             0,
             source,
             |_| unreachable!(),
@@ -510,7 +490,7 @@ mod tests {
         assert_eq!(snippet.start_line, 0);
         assert_eq!(
             snippet.lines,
-            [SourceLine {
+            [SnippetLine {
                 text: format!("1{}2", "\u{A7}".repeat(150)).into_boxed_str(),
                 alts: RangeSet::from(1..=300),
             }],
