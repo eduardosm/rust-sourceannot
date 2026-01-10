@@ -58,6 +58,7 @@ impl core::fmt::Debug for UnitMeta {
             f.debug_struct("SourceUnitMeta")
                 .field("width", &self.width())
                 .field("utf8_len", &self.utf8_len())
+                .field("alt", &self.is_alt())
                 .finish()
         }
     }
