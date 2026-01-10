@@ -74,7 +74,7 @@ impl<'a, M> Annotations<'a, M> {
     }
 
     pub fn max_line_no_width(&self) -> usize {
-        let max_line_i = self.snippet.pos_to_line(self.max_pos);
+        let max_line_i = self.snippet.src_pos_to_line(self.max_pos);
         let max_line_no = max_line_i + self.snippet.start_line();
         (max_line_no.max(1).ilog10() + 1) as usize
     }
@@ -312,8 +312,8 @@ impl<'a, M> PreProcAnnots<'a, M> {
     }
 
     fn create_line_data(snippet: &'a Snippet, line_i: usize) -> LineData {
-        let snippet_line = snippet.line(line_i);
-        let line_src_range = snippet.line_src_range(line_i);
+        let snippet_line = snippet.utf8_line_text(line_i);
+        let line_src_range = snippet.src_line_range(line_i);
         let mut styles = vec![(usize::MAX, false); snippet_line.len()];
         let mut utf8_i = 0;
         for (utf8_len, alt) in snippet.utf8_lens_and_alts(line_src_range) {
@@ -380,7 +380,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
 
         // Renders the text of a line
         let put_line_text = |line_i: usize, styles: &[(usize, bool)], out: &mut O| {
-            let line = self.snippet.line(line_i);
+            let line = self.snippet.utf8_line_text(line_i);
             assert_eq!(styles.len(), line.len());
             let mut chr_i = 0;
             while chr_i < line.len() {
@@ -403,7 +403,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
         };
 
         let put_fill_line_text = |line_i: usize, out: &mut O| {
-            let line = self.snippet.line(line_i);
+            let line = self.snippet.utf8_line_text(line_i);
             out.put_str(line, &self.main_style.text_normal_meta)?;
             out.put_char('\n', &self.main_style.spaces_meta)?;
             Ok(())

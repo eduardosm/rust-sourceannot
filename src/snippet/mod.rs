@@ -37,8 +37,9 @@ pub use utf8::InvalidUtf8SeqStyle;
 #[derive(Clone, Debug)]
 pub struct Snippet {
     start_line: usize,
-    lines: Vec<Box<str>>,
-    line_map: Vec<usize>,
+    utf8_text: Box<str>,
+    src_line_map: Vec<usize>,
+    utf8_line_map: Vec<usize>,
     metas: Vec<UnitMeta>,
     large_widths: Vec<(usize, usize)>,
     large_utf8_lens: Vec<(usize, usize)>,
@@ -128,23 +129,37 @@ impl Snippet {
         SnippetBuilder::new(start_line)
     }
 
-    pub(crate) fn pos_to_line(&self, pos: usize) -> usize {
-        match self.line_map.binary_search(&pos) {
+    pub(crate) fn src_pos_to_line(&self, pos: usize) -> usize {
+        match self.src_line_map.binary_search(&pos) {
             Ok(i) => i + 1,
             Err(i) => i,
         }
     }
 
-    pub(crate) fn line_src_range(&self, line_i: usize) -> core::ops::Range<usize> {
+    pub(crate) fn src_line_range(&self, line_i: usize) -> core::ops::Range<usize> {
         let start = if line_i == 0 {
             0
         } else {
-            self.line_map[line_i - 1]
+            self.src_line_map[line_i - 1]
         };
-        let end = if line_i == self.line_map.len() {
+        let end = if line_i == self.src_line_map.len() {
             self.metas.len()
         } else {
-            self.line_map[line_i]
+            self.src_line_map[line_i]
+        };
+        start..end
+    }
+
+    pub(crate) fn utf8_line_range(&self, line_i: usize) -> core::ops::Range<usize> {
+        let start = if line_i == 0 {
+            0
+        } else {
+            self.utf8_line_map[line_i - 1]
+        };
+        let end = if line_i == self.utf8_line_map.len() {
+            self.utf8_text.len()
+        } else {
+            self.utf8_line_map[line_i]
         };
         start..end
     }
@@ -225,8 +240,8 @@ impl Snippet {
     }
 
     #[inline]
-    pub(crate) fn line(&self, i: usize) -> &str {
-        &self.lines[i]
+    pub(crate) fn utf8_line_text(&self, i: usize) -> &str {
+        &self.utf8_text[self.utf8_line_range(i)]
     }
 
     pub(crate) fn convert_span(&self, mut start: usize, mut end: usize) -> SourceSpan {
@@ -241,14 +256,14 @@ impl Snippet {
         start = start.min(self.metas.len());
         end = end.min(self.metas.len());
 
-        let start_line = match self.line_map.binary_search(&start) {
+        let start_line = match self.src_line_map.binary_search(&start) {
             Ok(i) => i + 1,
             Err(i) => i,
         };
         let start_line_start = if start_line == 0 {
             0
         } else {
-            self.line_map[start_line - 1]
+            self.src_line_map[start_line - 1]
         };
         let start_col = self.gather_width(start_line_start..start);
         let start_utf8 = self.gather_utf8_len(start_line_start..start);
@@ -261,14 +276,14 @@ impl Snippet {
             end_col = start_col;
             end_utf8 = start_utf8;
         } else {
-            end_line = match self.line_map.binary_search(&end) {
+            end_line = match self.src_line_map.binary_search(&end) {
                 Ok(i) => i,
                 Err(i) => i,
             };
             let end_line_start = if end_line == 0 {
                 0
             } else {
-                self.line_map[end_line - 1]
+                self.src_line_map[end_line - 1]
             };
             end_col = self.gather_width(end_line_start..end);
             end_utf8 = self.gather_utf8_len(end_line_start..end);
@@ -370,35 +385,34 @@ pub enum ControlCharStyle {
 /// ```
 pub struct SnippetBuilder {
     start_line: usize,
-    lines: Vec<Box<str>>,
-    line_map: Vec<usize>,
+    utf8_text: String,
+    src_line_map: Vec<usize>,
+    utf8_line_map: Vec<usize>,
     metas: Vec<UnitMeta>,
     large_widths: Vec<(usize, usize)>,
     large_utf8_lens: Vec<(usize, usize)>,
-    current_line: String,
 }
 
 impl SnippetBuilder {
     fn new(start_line: usize) -> Self {
         Self {
             start_line,
-            lines: Vec::new(),
-            line_map: Vec::new(),
+            utf8_text: String::new(),
+            src_line_map: Vec::new(),
+            utf8_line_map: Vec::new(),
             metas: Vec::new(),
             large_widths: Vec::new(),
             large_utf8_lens: Vec::new(),
-            current_line: String::new(),
         }
     }
 
     /// Finalizes the builder and returns the constructed [`Snippet`].
-    pub fn finish(mut self) -> Snippet {
-        self.lines.push(self.current_line.into_boxed_str());
-
+    pub fn finish(self) -> Snippet {
         Snippet {
             start_line: self.start_line,
-            lines: self.lines,
-            line_map: self.line_map,
+            utf8_text: self.utf8_text.into_boxed_str(),
+            src_line_map: self.src_line_map,
+            utf8_line_map: self.utf8_line_map,
             metas: self.metas,
             large_widths: self.large_widths,
             large_utf8_lens: self.large_utf8_lens,
@@ -410,10 +424,9 @@ impl SnippetBuilder {
     /// `orig_len` is the number of *source units* consumed by the line break.
     /// For example, it can be `1` for `"\n"` or `2` for `"\r\n"`.
     pub fn next_line(&mut self, orig_len: usize) {
-        self.lines
-            .push(core::mem::take(&mut self.current_line).into_boxed_str());
         self.push_meta(orig_len, 1, 0, false);
-        self.line_map.push(self.metas.len());
+        self.src_line_map.push(self.metas.len());
+        self.utf8_line_map.push(self.utf8_text.len());
     }
 
     /// Consumes `orig_len` source units without producing any rendered text.
@@ -426,13 +439,13 @@ impl SnippetBuilder {
 
     /// Appends `text` to the current line.
     pub fn push_str(&mut self, text: &str, orig_len: usize, alt: bool) {
-        self.current_line.push_str(text);
+        self.utf8_text.push_str(text);
         self.push_meta(orig_len, string_width(text), text.len(), alt);
     }
 
     /// Appends a single character to the current line.
     pub fn push_char(&mut self, chr: char, orig_len: usize, alt: bool) {
-        self.current_line.push(chr);
+        self.utf8_text.push(chr);
         self.push_meta(orig_len, char_width(chr), chr.len_utf8(), alt);
     }
 
@@ -442,7 +455,7 @@ impl SnippetBuilder {
         let mut rem = width;
         while rem != 0 {
             let n = rem.min(spaces.len());
-            self.current_line.push_str(&spaces[..n]);
+            self.utf8_text.push_str(&spaces[..n]);
             rem -= n;
         }
         self.push_meta(orig_len, width, width, alt);
@@ -450,11 +463,11 @@ impl SnippetBuilder {
 
     /// Writes formatted text to the current line.
     pub fn push_fmt(&mut self, args: core::fmt::Arguments<'_>, orig_len: usize, alt: bool) {
-        let old_line_len = self.current_line.len();
-        core::fmt::write(&mut self.current_line, args)
+        let old_text_len = self.utf8_text.len();
+        core::fmt::write(&mut self.utf8_text, args)
             .expect("a format implementation returned an error unexpectedly");
-        let new_line_len = self.current_line.len();
-        let new_text = &self.current_line[old_line_len..new_line_len];
+        let new_text_len = self.utf8_text.len();
+        let new_text = &self.utf8_text[old_text_len..new_text_len];
         self.push_meta(orig_len, string_width(new_text), new_text.len(), alt);
     }
 
@@ -569,7 +582,7 @@ mod tests {
     use super::{Snippet, SourceSpan};
 
     #[test]
-    fn test_pos_to_line() {
+    fn test_src_pos_to_line() {
         let mut builder = Snippet::builder(0);
         builder.push_char('1', 1, false);
         builder.push_char('2', 1, false);
@@ -580,26 +593,26 @@ mod tests {
         builder.push_char('6', 1, false);
         let snippet = builder.finish();
 
-        assert_eq!(snippet.pos_to_line(0), (0));
-        assert_eq!(snippet.pos_to_line(1), (0));
-        assert_eq!(snippet.pos_to_line(2), (0));
-        assert_eq!(snippet.pos_to_line(3), (0));
-        assert_eq!(snippet.pos_to_line(4), (1));
-        assert_eq!(snippet.pos_to_line(5), (1));
-        assert_eq!(snippet.pos_to_line(6), (1));
+        assert_eq!(snippet.src_pos_to_line(0), (0));
+        assert_eq!(snippet.src_pos_to_line(1), (0));
+        assert_eq!(snippet.src_pos_to_line(2), (0));
+        assert_eq!(snippet.src_pos_to_line(3), (0));
+        assert_eq!(snippet.src_pos_to_line(4), (1));
+        assert_eq!(snippet.src_pos_to_line(5), (1));
+        assert_eq!(snippet.src_pos_to_line(6), (1));
     }
 
     #[test]
-    fn test_pos_to_line_large_meta() {
+    fn test_src_pos_to_line_large_meta() {
         let mut builder = Snippet::builder(0);
         builder.push_char('1', 1, false);
         builder.push_str(&"\u{A7}".repeat(150), 150, false);
         let snippet = builder.finish();
 
-        assert_eq!(snippet.pos_to_line(0), (0));
-        assert_eq!(snippet.pos_to_line(1), (0));
-        assert_eq!(snippet.pos_to_line(2), (0));
-        assert_eq!(snippet.pos_to_line(3), (0));
+        assert_eq!(snippet.src_pos_to_line(0), (0));
+        assert_eq!(snippet.src_pos_to_line(1), (0));
+        assert_eq!(snippet.src_pos_to_line(2), (0));
+        assert_eq!(snippet.src_pos_to_line(3), (0));
     }
 
     #[test]
