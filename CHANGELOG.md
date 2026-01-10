@@ -20,7 +20,7 @@
 
 ### Fixed
 
-- Fixed handling of spans that point to line breaks.
+- Fixed handling of spans that point to line breaks or zero-width fragments.
 - Allow `on_control` and `on_invalid` (from `SourceSnippet::build_from_utf8_ex`
   and `SourceSnippet::build_from_latin1_ex`) to return strings with a UTF-8 length
   larger than 127 bytes or a width larger than 127.
