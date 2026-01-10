@@ -53,9 +53,9 @@ struct UnitMeta {
 impl core::fmt::Debug for UnitMeta {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         if self.is_extra() {
-            f.write_str("SourceUnitMeta::extra()")
+            f.write_str("UnitMeta::extra()")
         } else {
-            f.debug_struct("SourceUnitMeta")
+            f.debug_struct("UnitMeta")
                 .field("width", &self.width())
                 .field("utf8_len", &self.utf8_len())
                 .field("alt", &self.is_alt())
