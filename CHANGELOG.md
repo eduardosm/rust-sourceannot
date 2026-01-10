@@ -34,7 +34,7 @@
 
 ### Other
 
-- Minimum Supported Rust Version (MSRV) has been bumped to 1.75.
+- Minimum Supported Rust Version (MSRV) has been bumped to 1.85.
 
 ## 0.2.1 (2024-08-13)
 
