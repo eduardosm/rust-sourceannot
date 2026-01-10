@@ -17,6 +17,7 @@
   added.
 - `dot_char` in `MarginStyle` has been renamed to `discontinuity_chars`, which now
   takes three characters.
+- Styles are now passed by reference.
 - A new `std` feature, which depends on `libstd`, has been enabled. Default
   features need to be disabled to support `no_std`.
 

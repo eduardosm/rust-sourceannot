@@ -110,16 +110,16 @@
 //! };
 //!
 //! // Create the annotations
-//! let mut annotations = sourceannot::Annotations::new(&snippet, main_style);
+//! let mut annotations = sourceannot::Annotations::new(&snippet, &main_style);
 //!
 //! annotations.add_annotation(
 //!     0..44,
-//!     annot_style,
+//!     &annot_style,
 //!     vec![("this is the `main` function".into(), Color::Red)],
 //! );
 //! annotations.add_annotation(
 //!     16..24,
-//!     annot_style,
+//!     &annot_style,
 //!     vec![("this is a macro invocation".into(), Color::Red)],
 //! );
 //!
@@ -213,17 +213,17 @@
 //! #     line_meta: Color::Red,
 //! # };
 //!
-//! let mut annotations = sourceannot::Annotations::new(&snippet, main_style);
+//! let mut annotations = sourceannot::Annotations::new(&snippet, &main_style);
 //! annotations.add_annotation(
 //!     0..45,
-//!     annot_style,
+//!     &annot_style,
 //!     vec![("this is the `main` function".into(), Color::Red)],
 //! );
 //!
 //! // Add a span that points to the invalid UTF-8 byte.
 //! annotations.add_annotation(
 //!     33..34,
-//!     annot_style,
+//!     &annot_style,
 //!     vec![("this an invalid UTF-8 sequence".into(), Color::Red)],
 //! );
 //!

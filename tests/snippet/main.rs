@@ -62,8 +62,8 @@ fn test_render_simple(
     carets_line: &str,
     text_styles: &str,
 ) {
-    let mut annots = sourceannot::Annotations::new(snippet, MAIN_STYLE);
-    annots.add_annotation(span, ANNOT_STYLE, Vec::new());
+    let mut annots = sourceannot::Annotations::new(snippet, &MAIN_STYLE);
+    annots.add_annotation(span, &ANNOT_STYLE, Vec::new());
 
     let mut output = TestOutput {
         text: String::new(),
