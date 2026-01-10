@@ -99,8 +99,8 @@ fn test_render_single_line() {
     }
     let snippet = builder.finish();
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..4, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..4, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -115,9 +115,9 @@ fn test_render_single_line() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..4, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(10..12, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..4, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(10..12, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -138,9 +138,9 @@ fn test_render_single_line() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(0..2, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(3..4, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(0..2, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(3..4, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -159,9 +159,9 @@ fn test_render_single_line() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..2, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(0..4, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..2, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(0..4, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -196,8 +196,8 @@ fn test_render_multi_line() {
     }
     let snippet = builder.finish();
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..12, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..12, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -218,9 +218,9 @@ fn test_render_multi_line() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(0..11, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(6..18, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(0..11, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(6..18, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -245,9 +245,9 @@ fn test_render_multi_line() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(0..18, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(6..11, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(0..18, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(6..11, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -272,9 +272,9 @@ fn test_render_multi_line() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(0..7, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(6..18, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(0..7, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(6..18, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -313,8 +313,8 @@ fn test_render_multi_line_wide_break() {
     }
     let snippet = builder.finish();
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..14, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..14, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -349,9 +349,9 @@ fn test_render_mixed_single_line_and_multi_line() {
     }
     let snippet = builder.finish();
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..12, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(6..9, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..12, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(6..9, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -388,8 +388,8 @@ fn test_render_zero_len_span() {
     }
     let snippet = builder.finish();
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(0..0, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(0..0, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -404,8 +404,8 @@ fn test_render_zero_len_span() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..1, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..1, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -420,8 +420,8 @@ fn test_render_zero_len_span() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(2..2, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(2..2, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -436,8 +436,8 @@ fn test_render_zero_len_span() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(3..3, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(3..3, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -452,8 +452,8 @@ fn test_render_zero_len_span() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(4..4, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(4..4, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -482,9 +482,9 @@ fn test_render_multi_char_unit() {
     builder.push_char('7', 1, false);
     let snippet = builder.finish();
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..4, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(7..8, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..4, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(7..8, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -503,9 +503,9 @@ fn test_render_multi_char_unit() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..4, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(6..8, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..4, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(6..8, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -524,9 +524,9 @@ fn test_render_multi_char_unit() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..4, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(7..9, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..4, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(7..9, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -559,9 +559,9 @@ fn test_render_multi_unit_char() {
     builder.push_char('8', 1, false);
     let snippet = builder.finish();
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..2, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(5..6, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..2, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(5..6, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -580,9 +580,9 @@ fn test_render_multi_unit_char() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..2, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(6..7, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..2, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(6..7, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -601,9 +601,9 @@ fn test_render_multi_unit_char() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..2, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(7..8, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..2, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(7..8, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -622,9 +622,9 @@ fn test_render_multi_unit_char() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..2, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(5..8, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..2, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(5..8, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -643,9 +643,9 @@ fn test_render_multi_unit_char() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..2, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(4..5, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..2, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(4..5, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -664,9 +664,9 @@ fn test_render_multi_unit_char() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..2, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(4..6, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..2, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(4..6, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -685,9 +685,9 @@ fn test_render_multi_unit_char() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..2, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(4..7, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..2, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(4..7, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -706,9 +706,9 @@ fn test_render_multi_unit_char() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..2, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(4..8, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..2, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(4..8, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -727,9 +727,9 @@ fn test_render_multi_unit_char() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..2, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(5..9, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..2, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(5..9, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -748,9 +748,9 @@ fn test_render_multi_unit_char() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..2, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(6..9, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..2, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(6..9, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -769,9 +769,9 @@ fn test_render_multi_unit_char() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..2, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(7..9, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..2, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(7..9, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -790,9 +790,9 @@ fn test_render_multi_unit_char() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..2, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(8..9, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..2, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(8..9, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -827,9 +827,9 @@ fn test_render_textless_unit() {
     builder.push_char('8', 1, false);
     let snippet = builder.finish();
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..3, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(6..7, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..3, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(6..7, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -848,9 +848,9 @@ fn test_render_textless_unit() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..3, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(6..8, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..3, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(6..8, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -869,9 +869,9 @@ fn test_render_textless_unit() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..3, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(6..9, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..3, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(6..9, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -890,9 +890,9 @@ fn test_render_textless_unit() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..3, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(7..8, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..3, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(7..8, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -911,9 +911,9 @@ fn test_render_textless_unit() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..3, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(8..9, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..3, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(8..9, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -932,9 +932,9 @@ fn test_render_textless_unit() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..3, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(8..10, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..3, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(8..10, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -967,8 +967,8 @@ fn test_render_line_break_1() {
     }
     let snippet = builder.finish();
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(4..4, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(4..4, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -983,8 +983,8 @@ fn test_render_line_break_1() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(4..5, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(4..5, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -999,8 +999,8 @@ fn test_render_line_break_1() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(3..4, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(3..4, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -1015,8 +1015,8 @@ fn test_render_line_break_1() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(3..5, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(3..5, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -1045,8 +1045,8 @@ fn test_render_line_break_2() {
     }
     let snippet = builder.finish();
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(4..4, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(4..4, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -1061,8 +1061,8 @@ fn test_render_line_break_2() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(4..5, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(4..5, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -1077,8 +1077,8 @@ fn test_render_line_break_2() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(5..5, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(5..5, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -1093,8 +1093,8 @@ fn test_render_line_break_2() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(5..6, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(5..6, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -1109,8 +1109,8 @@ fn test_render_line_break_2() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(4..6, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(4..6, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -1125,8 +1125,8 @@ fn test_render_line_break_2() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(3..4, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(3..4, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -1141,8 +1141,8 @@ fn test_render_line_break_2() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(3..5, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(3..5, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -1157,8 +1157,8 @@ fn test_render_line_break_2() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(3..6, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(3..6, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -1183,8 +1183,8 @@ fn test_render_eof() {
     }
     let snippet = builder.finish();
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(4..4, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(4..4, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -1201,8 +1201,8 @@ fn test_render_eof() {
 
     // beyond EOF spans
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(4..5, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(4..5, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -1217,8 +1217,8 @@ fn test_render_eof() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(5..5, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(5..5, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -1233,8 +1233,8 @@ fn test_render_eof() {
         "},
     );
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(5..6, ANNOT_STYLE_1, vec![("test".into(), '1')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(5..6, &ANNOT_STYLE_1, vec![("test".into(), '1')]);
     test_render(
         &annots,
         0,
@@ -1263,9 +1263,9 @@ fn test_render_line_numbers() {
     }
     let snippet = builder.finish();
 
-    let mut annots = Annotations::new(&snippet, MAIN_STYLE);
-    annots.add_annotation(1..4, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(10..12, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..4, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(10..12, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
 
     let mut output = TestOutput {
         text: String::new(),
@@ -1310,9 +1310,9 @@ fn test_render_different_discontinuity() {
     let mut main_style = MAIN_STYLE;
     main_style.margin.as_mut().unwrap().discontinuity_chars = ['.', '.', '.'];
 
-    let mut annots = Annotations::new(&snippet, main_style);
-    annots.add_annotation(1..4, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(10..12, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &main_style);
+    annots.add_annotation(1..4, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(10..12, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,
@@ -1350,9 +1350,9 @@ fn test_render_no_margin_single_line() {
     let mut main_style = MAIN_STYLE;
     main_style.margin = None;
 
-    let mut annots = Annotations::new(&snippet, main_style);
-    annots.add_annotation(1..4, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(10..12, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &main_style);
+    annots.add_annotation(1..4, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(10..12, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
 
     let mut output = TestOutput {
         text: String::new(),
@@ -1397,9 +1397,9 @@ fn test_render_no_margin_multi_line() {
     let mut main_style = MAIN_STYLE;
     main_style.margin = None;
 
-    let mut annots = Annotations::new(&snippet, main_style);
-    annots.add_annotation(0..11, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
-    annots.add_annotation(6..18, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    let mut annots = Annotations::new(&snippet, &main_style);
+    annots.add_annotation(0..11, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(6..18, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
         &annots,
         0,

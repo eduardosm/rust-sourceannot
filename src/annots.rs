@@ -33,21 +33,21 @@ use crate::{AnnotStyle, MainStyle, Output, Snippet};
 #[derive(Debug)]
 pub struct Annotations<'a, M> {
     snippet: &'a Snippet,
-    main_style: MainStyle<M>,
-    annots: Vec<Annotation<M>>,
+    main_style: &'a MainStyle<M>,
+    annots: Vec<Annotation<'a, M>>,
     max_pos: usize,
 }
 
 #[derive(Debug)]
-struct Annotation<M> {
+struct Annotation<'a, M> {
     span: core::ops::Range<usize>,
-    style: AnnotStyle<M>,
+    style: &'a AnnotStyle<M>,
     label: Vec<(String, M)>,
 }
 
 impl<'a, M> Annotations<'a, M> {
     /// Creates a new annotation collection for `snippet`.
-    pub fn new(snippet: &'a Snippet, main_style: MainStyle<M>) -> Self {
+    pub fn new(snippet: &'a Snippet, main_style: &'a MainStyle<M>) -> Self {
         Self {
             snippet,
             main_style,
@@ -66,7 +66,7 @@ impl<'a, M> Annotations<'a, M> {
     pub fn add_annotation(
         &mut self,
         span: core::ops::Range<usize>,
-        style: AnnotStyle<M>,
+        style: &'a AnnotStyle<M>,
         label: Vec<(String, M)>,
     ) {
         self.max_pos = self.max_pos.max(span.end);
@@ -113,9 +113,9 @@ impl<'a, M> Annotations<'a, M> {
     }
 
     fn pre_process(&'a self) -> PreProcAnnots<'a, M> {
-        let mut pre_proc = PreProcAnnots::new(self.snippet, &self.main_style);
+        let mut pre_proc = PreProcAnnots::new(self.snippet, self.main_style);
         for annot in self.annots.iter() {
-            pre_proc.add_annotation(annot.span.clone(), &annot.style, &annot.label);
+            pre_proc.add_annotation(annot.span.clone(), annot.style, &annot.label);
         }
         pre_proc
     }
