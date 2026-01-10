@@ -9,23 +9,21 @@
 - `SourceSnippet` has been renamed to `Snippet`.
 - `SnippetBuilder` has been added to build custom `Snippet`s.
 - `Snippet::get_line_col()` has been removed.
-- `Snipper::build_from_utf8()`, `Snipper::build_from_utf8_ex()`,
+- `Snippet::build_from_utf8()`, `Snippet::build_from_utf8_ex()`,
   `Snippet::build_from_latin1()` and `Snippet::build_from_latin1_ex()` functions
   have been removed.
-- New `Snipper::with_utf8()`, `Snipper::with_utf8_bytes()`,
+- New `Snippet::with_utf8()`, `Snippet::with_utf8_bytes()`,
   `Snippet::with_latin1()` and `Snippet::with_chars()` functions have been
   added.
 - `dot_char` in `MarginStyle` has been renamed to `discontinuity_chars`, which now
   takes three characters.
-- A new `std` feature, which depends on libstd has been enabled. Default features
-  need to be disabled to support `no_std`.
+- A new `std` feature, which depends on `libstd`, has been enabled. Default
+  features need to be disabled to support `no_std`.
 
 ### Fixed
 
 - Fixed handling of spans that point to line breaks or zero-width fragments.
-- Allow `on_control` and `on_invalid` (from `SourceSnippet::build_from_utf8_ex`
-  and `SourceSnippet::build_from_latin1_ex`) to return strings with a UTF-8 length
-  larger than 127 bytes or a width larger than 127.
+- Fixed pancking with tab widths greater than 127.
 - Line numbers in margins are now correctly aligned to the right.
 
 ### Changed
