@@ -24,7 +24,7 @@ impl Snippet {
     /// are rendered according to `control_char_style` (see [`ControlCharStyle`]).
     /// If `control_char_alt` is `true`, those replacement fragments are marked as
     /// "alternate" text.
-    pub fn build_from_latin1(
+    pub fn with_latin1(
         start_line: usize,
         source: &[u8],
         tab_width: usize,

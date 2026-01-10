@@ -11,6 +11,7 @@
 
 mod latin1;
 mod utf8;
+mod utf8_bytes;
 
 const MAIN_STYLE: sourceannot::MainStyle<char> = sourceannot::MainStyle {
     margin: None,
