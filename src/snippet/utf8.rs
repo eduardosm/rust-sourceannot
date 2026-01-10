@@ -21,6 +21,10 @@ impl Snippet {
     /// Any annotation span you pass later (a `Range<usize>`) is interpreted as
     /// byte offsets into this original `source` slice.
     ///
+    /// If you want the source units to be [`char`]s instead of bytes, use
+    /// [`Snippet::with_chars()`], passing [`source.chars()`](str::chars) as
+    /// `source`.
+    ///
     /// # Line breaks
     ///
     /// - `\n` and `\r\n` are treated as line breaks.
