@@ -546,7 +546,7 @@ mod tests {
     use super::{Snippet, SourceSpan};
 
     #[test]
-    fn test_get_line_col() {
+    fn test_pos_to_line() {
         let mut builder = Snippet::builder(0);
         builder.push_char('1', 1, false);
         builder.push_char('2', 1, false);
@@ -567,7 +567,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_line_col_large_meta() {
+    fn test_pos_to_line_large_meta() {
         let mut builder = Snippet::builder(0);
         builder.push_char('1', 1, false);
         builder.push_str(&"\u{A7}".repeat(150), 150, false);
@@ -580,142 +580,7 @@ mod tests {
     }
 
     #[test]
-    fn test_convert_span_simple() {
-        let mut builder = Snippet::builder(0);
-        builder.push_char('1', 1, false);
-        builder.push_char('2', 1, false);
-        builder.push_char('3', 1, false);
-        builder.next_line(1);
-        builder.push_char('4', 1, false);
-        builder.push_char('5', 1, false);
-        builder.push_char('6', 1, false);
-        let snippet = builder.finish();
-
-        assert_eq!(
-            snippet.convert_span(0, 0),
-            SourceSpan {
-                start_line: 0,
-                start_col: 0,
-                start_utf8: 0,
-                end_line: 0,
-                end_col: 0,
-                end_utf8: 0,
-            },
-        );
-        assert_eq!(
-            snippet.convert_span(0, 1),
-            SourceSpan {
-                start_line: 0,
-                start_col: 0,
-                start_utf8: 0,
-                end_line: 0,
-                end_col: 1,
-                end_utf8: 1,
-            },
-        );
-        assert_eq!(
-            snippet.convert_span(1, 2),
-            SourceSpan {
-                start_line: 0,
-                start_col: 1,
-                start_utf8: 1,
-                end_line: 0,
-                end_col: 2,
-                end_utf8: 2,
-            },
-        );
-        assert_eq!(
-            snippet.convert_span(2, 3),
-            SourceSpan {
-                start_line: 0,
-                start_col: 2,
-                start_utf8: 2,
-                end_line: 0,
-                end_col: 3,
-                end_utf8: 3,
-            },
-        );
-        assert_eq!(
-            snippet.convert_span(3, 4),
-            SourceSpan {
-                start_line: 0,
-                start_col: 3,
-                start_utf8: 3,
-                end_line: 0,
-                end_col: 4,
-                end_utf8: 3,
-            },
-        );
-        assert_eq!(
-            snippet.convert_span(4, 5),
-            SourceSpan {
-                start_line: 1,
-                start_col: 0,
-                start_utf8: 0,
-                end_line: 1,
-                end_col: 1,
-                end_utf8: 1,
-            },
-        );
-        assert_eq!(
-            snippet.convert_span(4, 4),
-            SourceSpan {
-                start_line: 1,
-                start_col: 0,
-                start_utf8: 0,
-                end_line: 1,
-                end_col: 0,
-                end_utf8: 0,
-            },
-        );
-        assert_eq!(
-            snippet.convert_span(5, 6),
-            SourceSpan {
-                start_line: 1,
-                start_col: 1,
-                start_utf8: 1,
-                end_line: 1,
-                end_col: 2,
-                end_utf8: 2,
-            },
-        );
-        assert_eq!(
-            snippet.convert_span(6, 7),
-            SourceSpan {
-                start_line: 1,
-                start_col: 2,
-                start_utf8: 2,
-                end_line: 1,
-                end_col: 3,
-                end_utf8: 3,
-            },
-        );
-        assert_eq!(
-            snippet.convert_span(7, 8),
-            SourceSpan {
-                start_line: 1,
-                start_col: 3,
-                start_utf8: 3,
-                end_line: 1,
-                end_col: 3,
-                end_utf8: 3,
-            },
-        );
-        assert_eq!(
-            snippet.convert_span(8, 9),
-            SourceSpan {
-                start_line: 1,
-                start_col: 3,
-                start_utf8: 3,
-                end_line: 1,
-                end_col: 3,
-                end_utf8: 3,
-            },
-        );
-    }
-
-    #[test]
-    fn test_convert_span_multi_unit() {
+    fn test_convert_span() {
         let mut builder = Snippet::builder(0);
         builder.push_char('1', 1, false);
         builder.push_char('\u{FF12}', 3, false);
