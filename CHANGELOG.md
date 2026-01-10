@@ -12,8 +12,9 @@
 - `Snipper::build_from_utf8()`, `Snipper::build_from_utf8_ex()`,
   `Snippet::build_from_latin1()` and `Snippet::build_from_latin1_ex()` functions
   have been removed.
-- New `Snipper::with_utf8()`, `Snipper::with_utf8_bytes()` and
-  `Snippet::with_latin1()` functions have been added.
+- New `Snipper::with_utf8()`, `Snipper::with_utf8_bytes()`,
+  `Snippet::with_latin1()` and `Snippet::with_chars()` functions have been
+  added.
 - A new `std` feature, which depends on libstd has been enabled. Default features
   need to be disabled to support `no_std`.
 

@@ -9,6 +9,7 @@
 
 // Simple rendering tests focused on snippet building.
 
+mod chars;
 mod latin1;
 mod utf8;
 mod utf8_bytes;

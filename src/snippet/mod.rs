@@ -4,6 +4,7 @@ use alloc::vec::Vec;
 
 use crate::range_set::RangeSet;
 
+mod chars;
 mod latin1;
 mod utf8;
 
@@ -21,6 +22,8 @@ pub use utf8::InvalidUtf8SeqStyle;
 ///   [`Snippet::with_latin1()`] treat a unit as a **byte** in the original byte
 ///   sequence. In the UTF-8 case, a valid printable character may correspond to
 ///   1 to 4 source units.
+/// - [`Snippet::with_chars()`] treats a unit as a **[`char`]** in the original
+///   character sequence.
 /// - [`Snippet::builder()`] allows units to be defined by the caller.
 ///
 /// Because the snippet may render replacements (expanded tabs, control-picture

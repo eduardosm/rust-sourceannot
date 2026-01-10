@@ -24,6 +24,8 @@
 //! - [`Snippet::with_utf8()`] uses **byte offsets** into the original `&str`.
 //! - [`Snippet::with_utf8_bytes()`] uses **byte offsets** into the original `&[u8]`.
 //! - [`Snippet::with_latin1()`] uses **byte offsets** into the original `&[u8]`.
+//! - [`Snippet::with_chars()`] uses **[`char`] indices** into the original
+//!   character sequence.
 //!
 //! These indices are *not* indices into the rendered output: some characters
 //! will be replaced with some representation (for example, tabs are replaced
