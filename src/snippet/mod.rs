@@ -188,27 +188,27 @@ impl Snippet {
         self.utf8_lens(src_range).sum()
     }
 
-    fn widths(&self, src_range: core::ops::Range<usize>) -> impl Iterator<Item = usize> + '_ {
+    fn gather_width(&self, src_range: core::ops::Range<usize>) -> (usize, bool) {
         let range_start = src_range.start;
-        self.metas[src_range]
-            .iter()
-            .enumerate()
-            .map(move |(i, meta)| {
-                let width_i = meta.width();
-                if width_i == UnitMeta::MAX_WIDTH {
-                    let large_i = self
-                        .large_widths
-                        .binary_search_by_key(&(i + range_start), |&(j, _)| j)
-                        .unwrap();
-                    self.large_widths[large_i].1
-                } else {
-                    usize::from(width_i)
-                }
-            })
-    }
-
-    fn gather_width(&self, src_range: core::ops::Range<usize>) -> usize {
-        self.widths(src_range).sum()
+        let mut width_sum = 0;
+        let mut last_is_zero = false;
+        for (i, meta) in self.metas[src_range].iter().enumerate() {
+            let meta_width = meta.width();
+            let width = if meta_width == UnitMeta::MAX_WIDTH {
+                let large_i = self
+                    .large_widths
+                    .binary_search_by_key(&(i + range_start), |&(j, _)| j)
+                    .unwrap();
+                self.large_widths[large_i].1
+            } else {
+                usize::from(meta_width)
+            };
+            width_sum += width;
+            if !meta.is_extra() {
+                last_is_zero = width == 0;
+            }
+        }
+        (width_sum, last_is_zero)
     }
 
     pub(crate) fn utf8_lens_and_alts(
@@ -266,15 +266,15 @@ impl Snippet {
         } else {
             self.src_line_map[start_line - 1]
         };
-        let start_col = self.gather_width(start_line_start..start);
+        let (start_col, _) = self.gather_width(start_line_start..start);
         let start_utf8 = self.gather_utf8_len(start_line_start..start);
 
         let end_line;
-        let end_col;
+        let mut end_col;
         let end_utf8;
         if end == start {
             end_line = start_line;
-            end_col = start_col;
+            end_col = start_col + 1; // Draw at least one caret for zero-width spans
             end_utf8 = start_utf8;
         } else {
             end_line = match self.src_line_map.binary_search(&end) {
@@ -286,7 +286,13 @@ impl Snippet {
             } else {
                 self.src_line_map[end_line - 1]
             };
-            end_col = self.gather_width(end_line_start..end);
+            let last_width_is_zero;
+            (end_col, last_width_is_zero) = self.gather_width(end_line_start..end);
+            if last_width_is_zero {
+                // If the last element pointed to by the span has zero width,
+                // add one caret to account for it.
+                end_col += 1;
+            }
             end_utf8 = self.gather_utf8_len(end_line_start..end);
         }
 
@@ -425,7 +431,7 @@ impl SnippetBuilder {
     /// `orig_len` is the number of *source units* consumed by the line break.
     /// For example, it can be `1` for `"\n"` or `2` for `"\r\n"`.
     pub fn next_line(&mut self, orig_len: usize) {
-        self.push_meta(orig_len, 1, 0, false);
+        self.push_meta(orig_len, 0, 0, false);
         self.src_line_map.push(self.metas.len());
         self.utf8_line_map.push(self.utf8_text.len());
     }
@@ -810,7 +816,7 @@ mod tests {
                 start_col: 151,
                 start_utf8: 301,
                 end_line: 0,
-                end_col: 151,
+                end_col: 152,
                 end_utf8: 301,
             },
         );
@@ -821,7 +827,7 @@ mod tests {
                 start_col: 152,
                 start_utf8: 302,
                 end_line: 0,
-                end_col: 152,
+                end_col: 153,
                 end_utf8: 302,
             },
         );

@@ -184,8 +184,9 @@ impl<'a, M> PreProcAnnots<'a, M> {
         if annot.span.start_line == annot.span.end_line {
             // Single line
 
-            // Render one caret for zero length spans
-            annot.span.end_col = annot.span.end_col.max(annot.span.start_col + 1);
+            // Render at least one caret for zero width spans
+            // (should have been handled by `Snippet::convert_span`)
+            assert!(annot.span.end_col > annot.span.start_col);
 
             // Check if annotation overlaps with other single line annotations
             for &prev_annot_i in line_data.sl_annots.iter() {
