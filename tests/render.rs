@@ -14,7 +14,7 @@ use sourceannot::{AnnotStyle, Annotations, MainStyle, MarginStyle, Snippet};
 const MAIN_STYLE: MainStyle<char> = MainStyle {
     margin: Some(MarginStyle {
         line_char: '│',
-        dot_char: '·',
+        discontinuity_chars: [' ', ' ', '·'],
         meta: 'm',
     }),
     horizontal_char: '─',
@@ -132,7 +132,7 @@ fn test_render_single_line() {
         indoc::indoc! {"
             msmstaaas
             ssmssllls111111s
-            ssmss
+            mmmss
             msmsbbtts
             ssmsLLs222222s
         "},
@@ -212,7 +212,7 @@ fn test_render_multi_line() {
         indoc::indoc! {"
             msmssstaaas
             ssmslllls
-            ssmslss
+            mmmslss
             msmslsaatts
             ssmslllls1111s
         "},
@@ -293,7 +293,7 @@ fn test_render_multi_line() {
             msmslsaabbs
             ssmslllls111111s
             ssmsLLLLs
-            ssmsLss
+            mmmsLss
             msmsLsbbbts
             ssmsLLLLLs222222s
         "},
@@ -329,7 +329,7 @@ fn test_render_multi_line_wide_break() {
         indoc::indoc! {"
             msmssstaaas
             ssmslllls
-            ssmslss
+            mmmslss
             msmslsaatts
             ssmslllls1111s
         "},
@@ -1287,9 +1287,49 @@ fn test_render_line_numbers() {
         indoc::indoc! {"
             smmsmstaaas
             ssssmssllls111111s
-            ssssmss
+            ssmmmss
             mmmsmsbbtts
             ssssmsLLs222222s
+        "},
+    );
+}
+
+#[test]
+fn test_render_different_discontinuity() {
+    // "1234\n5678\n90ab\ncdef\n"
+    let lines = ["1234", "5678", "90ab", "cdef"];
+    let mut builder = Snippet::builder(1);
+    for line in &lines {
+        for c in line.chars() {
+            builder.push_char(c, 1, false);
+        }
+        builder.next_line(1);
+    }
+    let snippet = builder.finish();
+
+    let mut main_style = MAIN_STYLE;
+    main_style.margin.as_mut().unwrap().discontinuity_chars = ['.', '.', '.'];
+
+    let mut annots = Annotations::new(&snippet, main_style);
+    annots.add_annotation(1..4, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(10..12, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    test_render(
+        &annots,
+        0,
+        0,
+        indoc::indoc! {"
+            1 │ 1234
+              │  ^^^ test 1
+            ... 
+            3 │ 90ab
+              │ -- test 2
+        "},
+        indoc::indoc! {"
+            msmstaaas
+            ssmssllls111111s
+            mmmss
+            msmsbbtts
+            ssmsLLs222222s
         "},
     );
 }
@@ -1309,6 +1349,7 @@ fn test_render_no_margin_single_line() {
 
     let mut main_style = MAIN_STYLE;
     main_style.margin = None;
+
     let mut annots = Annotations::new(&snippet, main_style);
     annots.add_annotation(1..4, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
     annots.add_annotation(10..12, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
@@ -1355,6 +1396,7 @@ fn test_render_no_margin_multi_line() {
 
     let mut main_style = MAIN_STYLE;
     main_style.margin = None;
+
     let mut annots = Annotations::new(&snippet, main_style);
     annots.add_annotation(0..11, ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
     annots.add_annotation(6..18, ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
