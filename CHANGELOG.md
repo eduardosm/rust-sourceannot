@@ -9,10 +9,11 @@
 - `SourceSnippet` has been renamed to `Snippet`.
 - `SnippetBuilder` has been added to build custom `Snippet`s.
 - `Snippet::get_line_col()` has been removed.
-- `Snipper::build_from_utf8_ex()` and `Snippet::build_from_latin1_ex()` functions
+- `Snipper::build_from_utf8()`, `Snipper::build_from_utf8_ex()`,
+  `Snippet::build_from_latin1()` and `Snippet::build_from_latin1_ex()` functions
   have been removed.
-- `Snipper::build_from_utf8()` and `Snippet::build_from_latin1()` now allow choosing
-  how control characters and invalid UTF-8 sequences are represented.
+- New `Snipper::with_utf8()`, `Snipper::with_utf8_bytes()` and
+  `Snippet::with_latin1()` functions have been added.
 - A new `std` feature, which depends on libstd has been enabled. Default features
   need to be disabled to support `no_std`.
 

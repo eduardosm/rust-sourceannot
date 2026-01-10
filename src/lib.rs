@@ -21,8 +21,9 @@
 //! snippet's *source unit* sequence (see [`Snippet`]). The exact unit depends
 //! on how the snippet was built:
 //!
-//! - [`Snippet::build_from_utf8()`] uses **byte offsets** into the original `&[u8]`.
-//! - [`Snippet::build_from_latin1()`] uses **byte offsets** into the original `&[u8]`.
+//! - [`Snippet::with_utf8()`] uses **byte offsets** into the original `&str`.
+//! - [`Snippet::with_utf8_bytes()`] uses **byte offsets** into the original `&[u8]`.
+//! - [`Snippet::with_latin1()`] uses **byte offsets** into the original `&[u8]`.
 //!
 //! These indices are *not* indices into the rendered output: some characters
 //! will be replaced with some representation (for example, tabs are replaced
@@ -60,13 +61,11 @@
 //! "#};
 //!
 //! // Create the snippet
-//! let snippet = sourceannot::Snippet::build_from_utf8(
+//! let snippet = sourceannot::Snippet::with_utf8(
 //!     1,
-//!     source.as_bytes(),
+//!     source,
 //!     4,
 //!     sourceannot::ControlCharStyle::Hexadecimal,
-//!     true,
-//!     sourceannot::InvalidUtf8SeqStyle::Hexadecimal,
 //!     true,
 //! );
 //!
@@ -141,13 +140,13 @@
 //!
 //! # assert_eq!(
 //! #     rendered,
-//! #     indoc::indoc! {"
+//! #     indoc::indoc! {r#"
 //! #         1 │ ╭ fn main() {
-//! #         2 │ │     println!(\"Hello, world!\");
+//! #         2 │ │     println!("Hello, world!");
 //! #           │ │     ^^^^^^^^ this is a macro invocation
 //! #         3 │ │ }
 //! #           │ ╰─^ this is the `main` function
-//! #     "},
+//! #     "#},
 //! # );
 //! ```
 //!
@@ -155,8 +154,107 @@
 //!
 //! ```text
 //! 1 │ ╭ fn main() {
-//! 2 │ │     println!(\"Hello, world!\");
+//! 2 │ │     println!("Hello, world!");
 //!   │ │     ^^^^^^^^ this is a macro invocation
+//! 3 │ │ }
+//!   │ ╰─^ this is the `main` function
+//! ```
+//!
+//! With an invalid UTF-8 source:
+//!
+//! ```
+//! // Some source code
+//! let source = indoc::indoc! {b"
+//!     fn main() {
+//!         println!(\"Hello, \xFFworld!\");
+//!     }
+//! "};
+//!
+//! // Create the snippet
+//! let snippet = sourceannot::Snippet::with_utf8_bytes(
+//!     1,
+//!     source,
+//!     4,
+//!     sourceannot::ControlCharStyle::Hexadecimal,
+//!     true,
+//!     sourceannot::InvalidUtf8SeqStyle::Hexadecimal,
+//!     true,
+//! );
+//!
+//! // Assume styles from the previous example...
+//! # #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+//! # enum Color {
+//! #     Default,
+//! #     Red,
+//! #     Green,
+//! #     Blue,
+//! # }
+//! # let main_style = sourceannot::MainStyle {
+//! #     margin: Some(sourceannot::MarginStyle {
+//! #         line_char: '│',
+//! #         dot_char: '·',
+//! #         meta: Color::Blue,
+//! #     }),
+//! #     horizontal_char: '─',
+//! #     vertical_char: '│',
+//! #     top_vertical_char: '╭',
+//! #     top_corner_char: '╭',
+//! #     bottom_corner_char: '╰',
+//! #     spaces_meta: Color::Default,
+//! #     text_normal_meta: Color::Default,
+//! #     text_alt_meta: Color::Default,
+//! # };
+//! # let annot_style = sourceannot::AnnotStyle {
+//! #     caret: '^',
+//! #     text_normal_meta: Color::Red,
+//! #     text_alt_meta: Color::Red,
+//! #     line_meta: Color::Red,
+//! # };
+//!
+//! let mut annotations = sourceannot::Annotations::new(&snippet, main_style);
+//! annotations.add_annotation(
+//!     0..45,
+//!     annot_style,
+//!     vec![("this is the `main` function".into(), Color::Red)],
+//! );
+//!
+//! // Add a span that points to the invalid UTF-8 byte.
+//! annotations.add_annotation(
+//!     33..34,
+//!     annot_style,
+//!     vec![("this an invalid UTF-8 sequence".into(), Color::Red)],
+//! );
+//!
+//! let max_line_no_width = annotations.max_line_no_width();
+//! annotations
+//!     .render(
+//!         max_line_no_width,
+//!         0,
+//!         0,
+//!         sourceannot::PlainOutput(std::io::stderr().lock()),
+//!     )
+//!     .expect("failed to write to stderr");
+//!
+//! # let mut rendered = String::new();
+//! # annotations.render(max_line_no_width, 0, 0, &mut rendered);
+//! # assert_eq!(
+//! #     rendered,
+//! #     indoc::indoc! {r#"
+//! #         1 │ ╭ fn main() {
+//! #         2 │ │     println!("Hello, <FF>world!");
+//! #           │ │                      ^^^^ this an invalid UTF-8 sequence
+//! #         3 │ │ }
+//! #           │ ╰─^ this is the `main` function
+//! #     "#},
+//! # );
+//! ```
+//!
+//! The output will look like this:
+//!
+//! ```text
+//! 1 │ ╭ fn main() {
+//! 2 │ │     println!("Hello, <FF>world!");
+//!   │ │                      ^^^^ this an invalid UTF-8 sequence
 //! 3 │ │ }
 //!   │ ╰─^ this is the `main` function
 //! ```

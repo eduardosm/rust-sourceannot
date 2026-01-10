@@ -17,9 +17,10 @@ pub use utf8::InvalidUtf8SeqStyle;
 /// sequence. The exact meaning of a "unit" depends on how you create the
 /// snippet:
 ///
-/// - [`Snippet::build_from_utf8()`] and [`Snippet::build_from_latin1()`] treat a
-///   unit as a **byte** in the original byte sequence. In the UTF-8 case, a valid
-///   printable character may correspond to 1 to 4 source units.
+/// - [`Snippet::with_utf8()`], [`Snippet::with_utf8_bytes()`] and
+///   [`Snippet::with_latin1()`] treat a unit as a **byte** in the original byte
+///   sequence. In the UTF-8 case, a valid printable character may correspond to
+///   1 to 4 source units.
 /// - [`Snippet::builder()`] allows units to be defined by the caller.
 ///
 /// Because the snippet may render replacements (expanded tabs, control-picture
