@@ -2,8 +2,6 @@ use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use crate::range_set::RangeSet;
-
 mod chars;
 mod latin1;
 mod utf8;
@@ -39,17 +37,11 @@ pub use utf8::InvalidUtf8SeqStyle;
 #[derive(Clone, Debug)]
 pub struct Snippet {
     start_line: usize,
-    lines: Vec<SnippetLine>,
+    lines: Vec<Box<str>>,
     line_map: Vec<usize>,
     metas: Vec<UnitMeta>,
     large_widths: Vec<(usize, usize)>,
     large_utf8_lens: Vec<(usize, usize)>,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct SnippetLine {
-    pub(crate) text: Box<str>,
-    pub(crate) alts: RangeSet<usize>,
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -71,33 +63,46 @@ impl core::fmt::Debug for UnitMeta {
 }
 
 impl UnitMeta {
+    const EXTRA_MASK: u16 = 0x8000;
+    const MAX_WIDTH: u8 = 0x7F;
+    const MAX_UTF8_LEN: u8 = 0x7F;
+    const ALT_MASK: u16 = 0x0080;
+
     #[inline]
     fn extra() -> Self {
-        Self { inner: 0x8000 }
+        Self {
+            inner: Self::EXTRA_MASK,
+        }
     }
 
     #[inline]
-    fn new(width: u8, utf8_len: u8) -> Self {
-        assert!(width <= 0x7F);
-        assert!(utf8_len <= 0x7F);
+    fn new(width: u8, utf8_len: u8, alt: bool) -> Self {
+        assert!(width <= Self::MAX_WIDTH);
+        assert!(utf8_len <= Self::MAX_UTF8_LEN);
+        let alt = if alt { Self::ALT_MASK } else { 0 };
         Self {
-            inner: u16::from(width) | (u16::from(utf8_len) << 7),
+            inner: u16::from(width) | (u16::from(utf8_len) << 8) | alt,
         }
     }
 
     #[inline]
     fn is_extra(&self) -> bool {
-        self.inner & 0x8000 != 0
+        self.inner & Self::EXTRA_MASK != 0
     }
 
     #[inline]
     fn width(&self) -> u8 {
-        (self.inner & 0x7F) as u8
+        (self.inner as u8) & Self::MAX_WIDTH
     }
 
     #[inline]
     fn utf8_len(&self) -> u8 {
-        ((self.inner >> 7) & 0x7F) as u8
+        ((self.inner >> 8) as u8) & Self::MAX_UTF8_LEN
+    }
+
+    #[inline]
+    fn is_alt(&self) -> bool {
+        self.inner & Self::ALT_MASK != 0
     }
 }
 
@@ -130,38 +135,88 @@ impl Snippet {
         }
     }
 
-    fn gather_utf8_len(&self, range: core::ops::Range<usize>) -> usize {
-        let mut utf8_len = 0;
-        for (i, meta) in self.metas[range.clone()].iter().enumerate() {
-            let len_i = meta.utf8_len();
-            if len_i == 0x7F {
-                let large_i = self
-                    .large_utf8_lens
-                    .binary_search_by_key(&(i + range.start), |&(j, _)| j)
-                    .unwrap();
-                utf8_len += self.large_utf8_lens[large_i].1;
-            } else {
-                utf8_len += usize::from(len_i);
-            }
-        }
-        utf8_len
+    pub(crate) fn line_src_range(&self, line_i: usize) -> core::ops::Range<usize> {
+        let start = if line_i == 0 {
+            0
+        } else {
+            self.line_map[line_i - 1]
+        };
+        let end = if line_i == self.line_map.len() {
+            self.metas.len()
+        } else {
+            self.line_map[line_i]
+        };
+        start..end
     }
 
-    fn gather_width(&self, range: core::ops::Range<usize>) -> usize {
-        let mut width = 0;
-        for (i, meta) in self.metas[range.clone()].iter().enumerate() {
-            let width_i = meta.width();
-            if width_i == 0x7F {
-                let large_i = self
-                    .large_widths
-                    .binary_search_by_key(&(i + range.start), |&(j, _)| j)
-                    .unwrap();
-                width += self.large_widths[large_i].1;
-            } else {
-                width += usize::from(width_i);
-            }
-        }
-        width
+    fn utf8_lens(&self, src_range: core::ops::Range<usize>) -> impl Iterator<Item = usize> + '_ {
+        let range_start = src_range.start;
+        self.metas[src_range]
+            .iter()
+            .enumerate()
+            .map(move |(i, meta)| {
+                let len_i = meta.utf8_len();
+                if len_i == UnitMeta::MAX_UTF8_LEN {
+                    let large_i = self
+                        .large_utf8_lens
+                        .binary_search_by_key(&(i + range_start), |&(j, _)| j)
+                        .unwrap();
+                    self.large_utf8_lens[large_i].1
+                } else {
+                    usize::from(len_i)
+                }
+            })
+    }
+
+    fn gather_utf8_len(&self, src_range: core::ops::Range<usize>) -> usize {
+        self.utf8_lens(src_range).sum()
+    }
+
+    fn widths(&self, src_range: core::ops::Range<usize>) -> impl Iterator<Item = usize> + '_ {
+        let range_start = src_range.start;
+        self.metas[src_range]
+            .iter()
+            .enumerate()
+            .map(move |(i, meta)| {
+                let width_i = meta.width();
+                if width_i == UnitMeta::MAX_WIDTH {
+                    let large_i = self
+                        .large_widths
+                        .binary_search_by_key(&(i + range_start), |&(j, _)| j)
+                        .unwrap();
+                    self.large_widths[large_i].1
+                } else {
+                    usize::from(width_i)
+                }
+            })
+    }
+
+    fn gather_width(&self, src_range: core::ops::Range<usize>) -> usize {
+        self.widths(src_range).sum()
+    }
+
+    pub(crate) fn utf8_lens_and_alts(
+        &self,
+        src_range: core::ops::Range<usize>,
+    ) -> impl Iterator<Item = (usize, bool)> + '_ {
+        let range_start = src_range.start;
+        self.metas[src_range]
+            .iter()
+            .enumerate()
+            .map(move |(i, meta)| {
+                let len_i = meta.utf8_len();
+                let alt = meta.is_alt();
+                let utf8_len = if len_i == UnitMeta::MAX_UTF8_LEN {
+                    let large_i = self
+                        .large_utf8_lens
+                        .binary_search_by_key(&(i + range_start), |&(j, _)| j)
+                        .unwrap();
+                    self.large_utf8_lens[large_i].1
+                } else {
+                    usize::from(len_i)
+                };
+                (utf8_len, alt)
+            })
     }
 
     #[inline]
@@ -170,7 +225,7 @@ impl Snippet {
     }
 
     #[inline]
-    pub(crate) fn line(&self, i: usize) -> &SnippetLine {
+    pub(crate) fn line(&self, i: usize) -> &str {
         &self.lines[i]
     }
 
@@ -315,13 +370,12 @@ pub enum ControlCharStyle {
 /// ```
 pub struct SnippetBuilder {
     start_line: usize,
-    lines: Vec<SnippetLine>,
+    lines: Vec<Box<str>>,
     line_map: Vec<usize>,
     metas: Vec<UnitMeta>,
     large_widths: Vec<(usize, usize)>,
     large_utf8_lens: Vec<(usize, usize)>,
-    current_line_text: String,
-    current_line_alts: RangeSet<usize>,
+    current_line: String,
 }
 
 impl SnippetBuilder {
@@ -333,17 +387,13 @@ impl SnippetBuilder {
             metas: Vec::new(),
             large_widths: Vec::new(),
             large_utf8_lens: Vec::new(),
-            current_line_text: String::new(),
-            current_line_alts: RangeSet::new(),
+            current_line: String::new(),
         }
     }
 
     /// Finalizes the builder and returns the constructed [`Snippet`].
     pub fn finish(mut self) -> Snippet {
-        self.lines.push(SnippetLine {
-            text: self.current_line_text.into_boxed_str(),
-            alts: self.current_line_alts,
-        });
+        self.lines.push(self.current_line.into_boxed_str());
 
         Snippet {
             start_line: self.start_line,
@@ -360,11 +410,9 @@ impl SnippetBuilder {
     /// `orig_len` is the number of *source units* consumed by the line break.
     /// For example, it can be `1` for `"\n"` or `2` for `"\r\n"`.
     pub fn next_line(&mut self, orig_len: usize) {
-        self.lines.push(SnippetLine {
-            text: core::mem::take(&mut self.current_line_text).into_boxed_str(),
-            alts: core::mem::take(&mut self.current_line_alts),
-        });
-        self.push_meta(orig_len, 1, 0);
+        self.lines
+            .push(core::mem::take(&mut self.current_line).into_boxed_str());
+        self.push_meta(orig_len, 1, 0, false);
         self.line_map.push(self.metas.len());
     }
 
@@ -373,71 +421,41 @@ impl SnippetBuilder {
     /// This is useful when you need to "eat" units that should not be visible
     /// in the output but still need to be span-addressable.
     pub fn push_empty(&mut self, orig_len: usize) {
-        self.push_meta(orig_len, 0, 0);
+        self.push_meta(orig_len, 0, 0, false);
     }
 
     /// Appends `text` to the current line.
     pub fn push_str(&mut self, text: &str, orig_len: usize, alt: bool) {
-        let old_line_len = self.current_line_text.len();
-        self.current_line_text.push_str(text);
-        let new_line_len = self.current_line_text.len();
-
-        if alt && !text.is_empty() {
-            self.current_line_alts
-                .insert(old_line_len..=(new_line_len - 1));
-        }
-
-        self.push_meta(orig_len, string_width(text), text.len());
+        self.current_line.push_str(text);
+        self.push_meta(orig_len, string_width(text), text.len(), alt);
     }
 
     /// Appends a single character to the current line.
     pub fn push_char(&mut self, chr: char, orig_len: usize, alt: bool) {
-        let old_line_len = self.current_line_text.len();
-        self.current_line_text.push(chr);
-        let new_line_len = self.current_line_text.len();
-
-        if alt {
-            self.current_line_alts
-                .insert(old_line_len..=(new_line_len - 1));
-        }
-
-        self.push_meta(orig_len, char_width(chr), chr.len_utf8());
+        self.current_line.push(chr);
+        self.push_meta(orig_len, char_width(chr), chr.len_utf8(), alt);
     }
 
     /// Appends `width` ASCII spaces to the current line.
     pub fn push_spaces(&mut self, width: usize, orig_len: usize, alt: bool) {
-        let old_line_len = self.current_line_text.len();
         let spaces = "                ";
         let mut rem = width;
         while rem != 0 {
             let n = rem.min(spaces.len());
-            self.current_line_text.push_str(&spaces[..n]);
+            self.current_line.push_str(&spaces[..n]);
             rem -= n;
         }
-        let new_line_len = self.current_line_text.len();
-
-        if alt && width != 0 {
-            self.current_line_alts
-                .insert(old_line_len..=(new_line_len - 1));
-        }
-
-        self.push_meta(orig_len, width, width);
+        self.push_meta(orig_len, width, width, alt);
     }
 
     /// Writes formatted text to the current line.
     pub fn push_fmt(&mut self, args: core::fmt::Arguments<'_>, orig_len: usize, alt: bool) {
-        let old_line_len = self.current_line_text.len();
-        core::fmt::write(&mut self.current_line_text, args)
+        let old_line_len = self.current_line.len();
+        core::fmt::write(&mut self.current_line, args)
             .expect("a format implementation returned an error unexpectedly");
-        let new_line_len = self.current_line_text.len();
-
-        if alt && new_line_len > old_line_len {
-            self.current_line_alts
-                .insert(old_line_len..=(new_line_len - 1));
-        }
-
-        let new_text = &self.current_line_text[old_line_len..new_line_len];
-        self.push_meta(orig_len, string_width(new_text), new_text.len());
+        let new_line_len = self.current_line.len();
+        let new_text = &self.current_line[old_line_len..new_line_len];
+        self.push_meta(orig_len, string_width(new_text), new_text.len(), alt);
     }
 
     /// Pushes a visible representation of certain control/invisible characters.
@@ -509,24 +527,25 @@ impl SnippetBuilder {
         }
     }
 
-    fn push_meta(&mut self, orig_len: usize, width: usize, utf8_len: usize) {
+    fn push_meta(&mut self, orig_len: usize, width: usize, utf8_len: usize, alt: bool) {
         if orig_len == 0 {
             return;
         }
 
-        let meta_width = if width >= 0x7F {
+        let meta_width = if width >= usize::from(UnitMeta::MAX_WIDTH) {
             self.large_widths.push((self.metas.len(), width));
-            0x7F
+            UnitMeta::MAX_WIDTH
         } else {
             width as u8
         };
-        let meta_utf8_len = if utf8_len >= 0x7F {
+        let meta_utf8_len = if utf8_len >= usize::from(UnitMeta::MAX_UTF8_LEN) {
             self.large_utf8_lens.push((self.metas.len(), utf8_len));
-            0x7F
+            UnitMeta::MAX_UTF8_LEN
         } else {
             utf8_len as u8
         };
-        self.metas.push(UnitMeta::new(meta_width, meta_utf8_len));
+        self.metas
+            .push(UnitMeta::new(meta_width, meta_utf8_len, alt));
         for _ in 1..orig_len {
             // Each element of `self.metas` corresponds to a unit in the original
             // source, so fill with "extras" for multi-unit chunks (for example, a

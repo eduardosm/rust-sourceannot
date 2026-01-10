@@ -313,10 +313,18 @@ impl<'a, M> PreProcAnnots<'a, M> {
 
     fn create_line_data(snippet: &'a Snippet, line_i: usize) -> LineData {
         let snippet_line = snippet.line(line_i);
-        let mut styles = vec![(usize::MAX, false); snippet_line.text.len()];
-        for alt_range in snippet_line.alts.ranges() {
-            styles[alt_range].fill((usize::MAX, true));
+        let line_src_range = snippet.line_src_range(line_i);
+        let mut styles = vec![(usize::MAX, false); snippet_line.len()];
+        let mut utf8_i = 0;
+        for (utf8_len, alt) in snippet.utf8_lens_and_alts(line_src_range) {
+            if alt {
+                for style in styles[utf8_i..(utf8_i + utf8_len)].iter_mut() {
+                    style.1 = true;
+                }
+            }
+            utf8_i += utf8_len;
         }
+        assert_eq!(utf8_i, snippet_line.len());
         LineData {
             sl_annots: Vec::new(),
             ml_annots_starts: Vec::new(),
@@ -373,9 +381,9 @@ impl<'a, M> PreProcAnnots<'a, M> {
         // Renders the text of a line
         let put_line_text = |line_i: usize, styles: &[(usize, bool)], out: &mut O| {
             let line = self.snippet.line(line_i);
-            assert_eq!(styles.len(), line.text.len());
+            assert_eq!(styles.len(), line.len());
             let mut chr_i = 0;
-            while chr_i < line.text.len() {
+            while chr_i < line.len() {
                 let (annot_i, is_alt) = styles[chr_i];
                 let len = styles[chr_i..]
                     .iter()
@@ -387,7 +395,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
                     (annot_i, false) => &self.annots[annot_i].style.text_normal_meta,
                     (annot_i, true) => &self.annots[annot_i].style.text_alt_meta,
                 };
-                out.put_str(&line.text[chr_i..(chr_i + len)], meta)?;
+                out.put_str(&line[chr_i..(chr_i + len)], meta)?;
                 chr_i += len;
             }
             out.put_char('\n', &self.main_style.spaces_meta)?;
@@ -396,7 +404,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
 
         let put_fill_line_text = |line_i: usize, out: &mut O| {
             let line = self.snippet.line(line_i);
-            out.put_str(&line.text, &self.main_style.text_normal_meta)?;
+            out.put_str(line, &self.main_style.text_normal_meta)?;
             out.put_char('\n', &self.main_style.spaces_meta)?;
             Ok(())
         };

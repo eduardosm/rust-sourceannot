@@ -266,7 +266,6 @@ extern crate alloc;
 extern crate std;
 
 mod annots;
-mod range_set;
 mod snippet;
 
 pub use annots::Annotations;
