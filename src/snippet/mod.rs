@@ -41,13 +41,12 @@ pub struct Snippet {
     src_line_map: Vec<usize>,
     utf8_line_map: Vec<usize>,
     metas: Vec<UnitMeta>,
-    large_widths: Vec<(usize, usize)>,
     large_utf8_lens: Vec<(usize, usize)>,
 }
 
 #[derive(Clone, PartialEq, Eq)]
 struct UnitMeta {
-    inner: u16,
+    inner: u8,
 }
 
 impl core::fmt::Debug for UnitMeta {
@@ -56,7 +55,6 @@ impl core::fmt::Debug for UnitMeta {
             f.write_str("UnitMeta::extra()")
         } else {
             f.debug_struct("UnitMeta")
-                .field("width", &self.width())
                 .field("utf8_len", &self.utf8_len())
                 .field("alt", &self.is_alt())
                 .finish()
@@ -65,10 +63,9 @@ impl core::fmt::Debug for UnitMeta {
 }
 
 impl UnitMeta {
-    const EXTRA_MASK: u16 = 0x8000;
-    const MAX_WIDTH: u8 = 0x7F;
-    const MAX_UTF8_LEN: u8 = 0x7F;
-    const ALT_MASK: u16 = 0x0080;
+    const EXTRA_MASK: u8 = 0x80;
+    const ALT_MASK: u8 = 0x40;
+    const MAX_UTF8_LEN: u8 = 0x3F;
 
     #[inline]
     fn extra() -> Self {
@@ -78,12 +75,11 @@ impl UnitMeta {
     }
 
     #[inline]
-    fn new(width: u8, utf8_len: u8, alt: bool) -> Self {
-        assert!(width <= Self::MAX_WIDTH);
+    fn new(utf8_len: u8, alt: bool) -> Self {
         assert!(utf8_len <= Self::MAX_UTF8_LEN);
         let alt = if alt { Self::ALT_MASK } else { 0 };
         Self {
-            inner: u16::from(width) | (u16::from(utf8_len) << 8) | alt,
+            inner: utf8_len | alt,
         }
     }
 
@@ -93,13 +89,8 @@ impl UnitMeta {
     }
 
     #[inline]
-    fn width(&self) -> u8 {
-        (self.inner as u8) & Self::MAX_WIDTH
-    }
-
-    #[inline]
     fn utf8_len(&self) -> u8 {
-        ((self.inner >> 8) as u8) & Self::MAX_UTF8_LEN
+        self.inner & Self::MAX_UTF8_LEN
     }
 
     #[inline]
@@ -112,10 +103,10 @@ impl UnitMeta {
 pub(crate) struct SourceSpan {
     pub(crate) start_line: usize,
     pub(crate) start_col: usize,
-    pub(crate) start_utf8: usize,
+    pub(crate) start_col_utf8: usize,
     pub(crate) end_line: usize,
     pub(crate) end_col: usize,
-    pub(crate) end_utf8: usize,
+    pub(crate) end_col_utf8: usize,
 }
 
 impl Snippet {
@@ -165,50 +156,27 @@ impl Snippet {
         start..end
     }
 
-    fn utf8_lens(&self, src_range: core::ops::Range<usize>) -> impl Iterator<Item = usize> + '_ {
+    fn gather_utf8_len(&self, src_range: core::ops::Range<usize>) -> (usize, bool) {
         let range_start = src_range.start;
-        self.metas[src_range]
-            .iter()
-            .enumerate()
-            .map(move |(i, meta)| {
-                let len_i = meta.utf8_len();
-                if len_i == UnitMeta::MAX_UTF8_LEN {
-                    let large_i = self
-                        .large_utf8_lens
-                        .binary_search_by_key(&(i + range_start), |&(j, _)| j)
-                        .unwrap();
-                    self.large_utf8_lens[large_i].1
-                } else {
-                    usize::from(len_i)
-                }
-            })
-    }
-
-    fn gather_utf8_len(&self, src_range: core::ops::Range<usize>) -> usize {
-        self.utf8_lens(src_range).sum()
-    }
-
-    fn gather_width(&self, src_range: core::ops::Range<usize>) -> (usize, bool) {
-        let range_start = src_range.start;
-        let mut width_sum = 0;
+        let mut len_sum = 0;
         let mut last_is_zero = false;
         for (i, meta) in self.metas[src_range].iter().enumerate() {
-            let meta_width = meta.width();
-            let width = if meta_width == UnitMeta::MAX_WIDTH {
+            let meta_len = meta.utf8_len();
+            let len = if meta_len == UnitMeta::MAX_UTF8_LEN {
                 let large_i = self
-                    .large_widths
+                    .large_utf8_lens
                     .binary_search_by_key(&(i + range_start), |&(j, _)| j)
                     .unwrap();
-                self.large_widths[large_i].1
+                self.large_utf8_lens[large_i].1
             } else {
-                usize::from(meta_width)
+                usize::from(meta_len)
             };
-            width_sum += width;
+            len_sum += len;
             if !meta.is_extra() {
-                last_is_zero = width == 0;
+                last_is_zero = len == 0;
             }
         }
-        (width_sum, last_is_zero)
+        (len_sum, last_is_zero)
     }
 
     pub(crate) fn utf8_lens_and_alts(
@@ -261,48 +229,65 @@ impl Snippet {
             Ok(i) => i + 1,
             Err(i) => i,
         };
-        let start_line_start = if start_line == 0 {
-            0
+        let (start_line_src_start, start_line_utf8_start) = if start_line == 0 {
+            (0, 0)
         } else {
-            self.src_line_map[start_line - 1]
+            (
+                self.src_line_map[start_line - 1],
+                self.utf8_line_map[start_line - 1],
+            )
         };
-        let (start_col, _) = self.gather_width(start_line_start..start);
-        let start_utf8 = self.gather_utf8_len(start_line_start..start);
+        let (start_col_utf8, _) = self.gather_utf8_len(start_line_src_start..start);
+        let start_col = string_width(&self.utf8_text[start_line_utf8_start..][..start_col_utf8]);
 
         let end_line;
         let mut end_col;
-        let end_utf8;
+        let mut end_col_utf8;
         if end == start {
             end_line = start_line;
             end_col = start_col + 1; // Draw at least one caret for zero-width spans
-            end_utf8 = start_utf8;
+            end_col_utf8 = start_col_utf8;
         } else {
             end_line = match self.src_line_map.binary_search(&end) {
                 Ok(i) => i,
                 Err(i) => i,
             };
-            let end_line_start = if end_line == 0 {
-                0
-            } else {
-                self.src_line_map[end_line - 1]
-            };
+
             let last_width_is_zero;
-            (end_col, last_width_is_zero) = self.gather_width(end_line_start..end);
+            if end_line == start_line {
+                (end_col_utf8, last_width_is_zero) = self.gather_utf8_len(start..end);
+                end_col_utf8 += start_col_utf8;
+                end_col = start_col
+                    + string_width(
+                        &self.utf8_text[start_line_utf8_start..][start_col_utf8..end_col_utf8],
+                    );
+            } else {
+                let (end_line_src_start, end_line_utf8_start) = if end_line == 0 {
+                    (0, 0)
+                } else {
+                    (
+                        self.src_line_map[end_line - 1],
+                        self.utf8_line_map[end_line - 1],
+                    )
+                };
+                (end_col_utf8, last_width_is_zero) = self.gather_utf8_len(end_line_src_start..end);
+                end_col = string_width(&self.utf8_text[end_line_utf8_start..][..end_col_utf8]);
+            }
+
             if last_width_is_zero {
                 // If the last element pointed to by the span has zero width,
                 // add one caret to account for it.
                 end_col += 1;
             }
-            end_utf8 = self.gather_utf8_len(end_line_start..end);
         }
 
         SourceSpan {
             start_line,
             start_col,
-            start_utf8,
+            start_col_utf8,
             end_line,
             end_col,
-            end_utf8,
+            end_col_utf8,
         }
     }
 }
@@ -396,7 +381,6 @@ pub struct SnippetBuilder {
     src_line_map: Vec<usize>,
     utf8_line_map: Vec<usize>,
     metas: Vec<UnitMeta>,
-    large_widths: Vec<(usize, usize)>,
     large_utf8_lens: Vec<(usize, usize)>,
 }
 
@@ -408,7 +392,6 @@ impl SnippetBuilder {
             src_line_map: Vec::new(),
             utf8_line_map: Vec::new(),
             metas: Vec::new(),
-            large_widths: Vec::new(),
             large_utf8_lens: Vec::new(),
         }
     }
@@ -421,7 +404,6 @@ impl SnippetBuilder {
             src_line_map: self.src_line_map,
             utf8_line_map: self.utf8_line_map,
             metas: self.metas,
-            large_widths: self.large_widths,
             large_utf8_lens: self.large_utf8_lens,
         }
     }
@@ -431,7 +413,7 @@ impl SnippetBuilder {
     /// `orig_len` is the number of *source units* consumed by the line break.
     /// For example, it can be `1` for `"\n"` or `2` for `"\r\n"`.
     pub fn next_line(&mut self, orig_len: usize) {
-        self.push_meta(orig_len, 0, 0, false);
+        self.push_meta(orig_len, 0, false);
         self.src_line_map.push(self.metas.len());
         self.utf8_line_map.push(self.utf8_text.len());
     }
@@ -441,19 +423,19 @@ impl SnippetBuilder {
     /// This is useful when you need to "eat" units that should not be visible
     /// in the output but still need to be span-addressable.
     pub fn push_empty(&mut self, orig_len: usize) {
-        self.push_meta(orig_len, 0, 0, false);
+        self.push_meta(orig_len, 0, false);
     }
 
     /// Appends `text` to the current line.
     pub fn push_str(&mut self, text: &str, orig_len: usize, alt: bool) {
         self.utf8_text.push_str(text);
-        self.push_meta(orig_len, string_width(text), text.len(), alt);
+        self.push_meta(orig_len, text.len(), alt);
     }
 
     /// Appends a single character to the current line.
     pub fn push_char(&mut self, chr: char, orig_len: usize, alt: bool) {
         self.utf8_text.push(chr);
-        self.push_meta(orig_len, char_width(chr), chr.len_utf8(), alt);
+        self.push_meta(orig_len, chr.len_utf8(), alt);
     }
 
     /// Appends `width` ASCII spaces to the current line.
@@ -465,7 +447,7 @@ impl SnippetBuilder {
             self.utf8_text.push_str(&spaces[..n]);
             rem -= n;
         }
-        self.push_meta(orig_len, width, width, alt);
+        self.push_meta(orig_len, width, alt);
     }
 
     /// Writes formatted text to the current line.
@@ -475,7 +457,7 @@ impl SnippetBuilder {
             .expect("a format implementation returned an error unexpectedly");
         let new_text_len = self.utf8_text.len();
         let new_text = &self.utf8_text[old_text_len..new_text_len];
-        self.push_meta(orig_len, string_width(new_text), new_text.len(), alt);
+        self.push_meta(orig_len, new_text.len(), alt);
     }
 
     /// Pushes a visible representation of certain control/invisible characters.
@@ -547,25 +529,18 @@ impl SnippetBuilder {
         }
     }
 
-    fn push_meta(&mut self, orig_len: usize, width: usize, utf8_len: usize, alt: bool) {
+    fn push_meta(&mut self, orig_len: usize, utf8_len: usize, alt: bool) {
         if orig_len == 0 {
             return;
         }
 
-        let meta_width = if width >= usize::from(UnitMeta::MAX_WIDTH) {
-            self.large_widths.push((self.metas.len(), width));
-            UnitMeta::MAX_WIDTH
-        } else {
-            width as u8
-        };
         let meta_utf8_len = if utf8_len >= usize::from(UnitMeta::MAX_UTF8_LEN) {
             self.large_utf8_lens.push((self.metas.len(), utf8_len));
             UnitMeta::MAX_UTF8_LEN
         } else {
             utf8_len as u8
         };
-        self.metas
-            .push(UnitMeta::new(meta_width, meta_utf8_len, alt));
+        self.metas.push(UnitMeta::new(meta_utf8_len, alt));
         for _ in 1..orig_len {
             // Each element of `self.metas` corresponds to a unit in the original
             // source, so fill with "extras" for multi-unit chunks (for example, a
@@ -639,10 +614,10 @@ mod tests {
             SourceSpan {
                 start_line: 0,
                 start_col: 0,
-                start_utf8: 0,
+                start_col_utf8: 0,
                 end_line: 0,
                 end_col: 1,
-                end_utf8: 1,
+                end_col_utf8: 1,
             },
         );
         assert_eq!(
@@ -650,10 +625,10 @@ mod tests {
             SourceSpan {
                 start_line: 0,
                 start_col: 1,
-                start_utf8: 1,
+                start_col_utf8: 1,
                 end_line: 0,
                 end_col: 3,
-                end_utf8: 4,
+                end_col_utf8: 4,
             },
         );
         assert_eq!(
@@ -661,10 +636,10 @@ mod tests {
             SourceSpan {
                 start_line: 0,
                 start_col: 1,
-                start_utf8: 1,
+                start_col_utf8: 1,
                 end_line: 0,
                 end_col: 3,
-                end_utf8: 4,
+                end_col_utf8: 4,
             },
         );
         assert_eq!(
@@ -672,10 +647,10 @@ mod tests {
             SourceSpan {
                 start_line: 0,
                 start_col: 1,
-                start_utf8: 1,
+                start_col_utf8: 1,
                 end_line: 0,
                 end_col: 3,
-                end_utf8: 4,
+                end_col_utf8: 4,
             },
         );
         assert_eq!(
@@ -683,10 +658,10 @@ mod tests {
             SourceSpan {
                 start_line: 0,
                 start_col: 1,
-                start_utf8: 1,
+                start_col_utf8: 1,
                 end_line: 0,
                 end_col: 3,
-                end_utf8: 4,
+                end_col_utf8: 4,
             },
         );
         assert_eq!(
@@ -694,10 +669,10 @@ mod tests {
             SourceSpan {
                 start_line: 0,
                 start_col: 1,
-                start_utf8: 1,
+                start_col_utf8: 1,
                 end_line: 0,
                 end_col: 3,
-                end_utf8: 4,
+                end_col_utf8: 4,
             },
         );
         assert_eq!(
@@ -705,10 +680,10 @@ mod tests {
             SourceSpan {
                 start_line: 0,
                 start_col: 1,
-                start_utf8: 1,
+                start_col_utf8: 1,
                 end_line: 0,
                 end_col: 3,
-                end_utf8: 4,
+                end_col_utf8: 4,
             },
         );
         assert_eq!(
@@ -716,10 +691,10 @@ mod tests {
             SourceSpan {
                 start_line: 0,
                 start_col: 3,
-                start_utf8: 4,
+                start_col_utf8: 4,
                 end_line: 0,
                 end_col: 4,
-                end_utf8: 5,
+                end_col_utf8: 5,
             },
         );
         assert_eq!(
@@ -727,10 +702,10 @@ mod tests {
             SourceSpan {
                 start_line: 1,
                 start_col: 0,
-                start_utf8: 0,
+                start_col_utf8: 0,
                 end_line: 1,
                 end_col: 1,
-                end_utf8: 1,
+                end_col_utf8: 1,
             },
         );
     }
@@ -748,10 +723,10 @@ mod tests {
             SourceSpan {
                 start_line: 0,
                 start_col: 0,
-                start_utf8: 0,
+                start_col_utf8: 0,
                 end_line: 0,
                 end_col: 1,
-                end_utf8: 1,
+                end_col_utf8: 1,
             },
         );
         assert_eq!(
@@ -759,10 +734,10 @@ mod tests {
             SourceSpan {
                 start_line: 0,
                 start_col: 0,
-                start_utf8: 0,
+                start_col_utf8: 0,
                 end_line: 0,
                 end_col: 151,
-                end_utf8: 301,
+                end_col_utf8: 301,
             },
         );
         assert_eq!(
@@ -770,10 +745,10 @@ mod tests {
             SourceSpan {
                 start_line: 0,
                 start_col: 0,
-                start_utf8: 0,
+                start_col_utf8: 0,
                 end_line: 0,
                 end_col: 152,
-                end_utf8: 302,
+                end_col_utf8: 302,
             },
         );
         assert_eq!(
@@ -781,10 +756,10 @@ mod tests {
             SourceSpan {
                 start_line: 0,
                 start_col: 1,
-                start_utf8: 1,
+                start_col_utf8: 1,
                 end_line: 0,
                 end_col: 151,
-                end_utf8: 301,
+                end_col_utf8: 301,
             },
         );
         assert_eq!(
@@ -792,10 +767,10 @@ mod tests {
             SourceSpan {
                 start_line: 0,
                 start_col: 1,
-                start_utf8: 1,
+                start_col_utf8: 1,
                 end_line: 0,
                 end_col: 152,
-                end_utf8: 302,
+                end_col_utf8: 302,
             },
         );
         assert_eq!(
@@ -803,10 +778,10 @@ mod tests {
             SourceSpan {
                 start_line: 0,
                 start_col: 151,
-                start_utf8: 301,
+                start_col_utf8: 301,
                 end_line: 0,
                 end_col: 152,
-                end_utf8: 302,
+                end_col_utf8: 302,
             },
         );
         assert_eq!(
@@ -814,10 +789,10 @@ mod tests {
             SourceSpan {
                 start_line: 0,
                 start_col: 151,
-                start_utf8: 301,
+                start_col_utf8: 301,
                 end_line: 0,
                 end_col: 152,
-                end_utf8: 301,
+                end_col_utf8: 301,
             },
         );
         assert_eq!(
@@ -825,10 +800,10 @@ mod tests {
             SourceSpan {
                 start_line: 0,
                 start_col: 152,
-                start_utf8: 302,
+                start_col_utf8: 302,
                 end_line: 0,
                 end_col: 153,
-                end_utf8: 302,
+                end_col_utf8: 302,
             },
         );
     }

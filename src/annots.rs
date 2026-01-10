@@ -223,7 +223,8 @@ impl<'a, M> PreProcAnnots<'a, M> {
             }
 
             // Apply line text styles
-            for chr_style in line_data.styles[annot.span.start_utf8..annot.span.end_utf8].iter_mut()
+            for chr_style in
+                line_data.styles[annot.span.start_col_utf8..annot.span.end_col_utf8].iter_mut()
             {
                 if chr_style.0 == usize::MAX {
                     chr_style.0 = annot_i;
@@ -233,7 +234,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
             Self::insert_annot_sorted(&self.annots, &annot, annot_i, &mut line_data.sl_annots);
         } else {
             // Multi line
-            for chr_style in line_data.styles[annot.span.start_utf8..].iter_mut() {
+            for chr_style in line_data.styles[annot.span.start_col_utf8..].iter_mut() {
                 if chr_style.0 == usize::MAX {
                     chr_style.0 = annot_i;
                 }
@@ -250,7 +251,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
                 .entry(annot.span.end_line)
                 .or_insert_with(|| Self::create_line_data(self.snippet, annot.span.end_line));
 
-            for chr_style in end_line_data.styles[..annot.span.end_utf8].iter_mut() {
+            for chr_style in end_line_data.styles[..annot.span.end_col_utf8].iter_mut() {
                 if chr_style.0 == usize::MAX {
                     chr_style.0 = annot_i;
                 }
