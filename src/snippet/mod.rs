@@ -38,8 +38,7 @@ pub use utf8::InvalidUtf8SeqStyle;
 pub struct Snippet {
     start_line: usize,
     utf8_text: Box<str>,
-    src_line_map: Vec<usize>,
-    utf8_line_map: Vec<usize>,
+    line_map: Vec<(usize, usize)>, // (src, utf8)
     metas: Vec<UnitMeta>,
     large_utf8_lens: Vec<(usize, usize)>,
 }
@@ -122,7 +121,7 @@ impl Snippet {
     }
 
     pub(crate) fn src_pos_to_line(&self, pos: usize) -> usize {
-        match self.src_line_map.binary_search(&pos) {
+        match self.line_map.binary_search_by_key(&pos, |&(i, _)| i) {
             Ok(i) => i + 1,
             Err(i) => i,
         }
@@ -132,12 +131,12 @@ impl Snippet {
         let start = if line_i == 0 {
             0
         } else {
-            self.src_line_map[line_i - 1]
+            self.line_map[line_i - 1].0
         };
-        let end = if line_i == self.src_line_map.len() {
+        let end = if line_i == self.line_map.len() {
             self.metas.len()
         } else {
-            self.src_line_map[line_i]
+            self.line_map[line_i].0
         };
         start..end
     }
@@ -146,12 +145,12 @@ impl Snippet {
         let start = if line_i == 0 {
             0
         } else {
-            self.utf8_line_map[line_i - 1]
+            self.line_map[line_i - 1].1
         };
-        let end = if line_i == self.utf8_line_map.len() {
+        let end = if line_i == self.line_map.len() {
             self.utf8_text.len()
         } else {
-            self.utf8_line_map[line_i]
+            self.line_map[line_i].1
         };
         start..end
     }
@@ -225,17 +224,14 @@ impl Snippet {
         start = start.min(self.metas.len());
         end = end.min(self.metas.len());
 
-        let start_line = match self.src_line_map.binary_search(&start) {
+        let start_line = match self.line_map.binary_search_by_key(&start, |&(i, _)| i) {
             Ok(i) => i + 1,
             Err(i) => i,
         };
         let (start_line_src_start, start_line_utf8_start) = if start_line == 0 {
             (0, 0)
         } else {
-            (
-                self.src_line_map[start_line - 1],
-                self.utf8_line_map[start_line - 1],
-            )
+            self.line_map[start_line - 1]
         };
         let (start_col_utf8, _) = self.gather_utf8_len(start_line_src_start..start);
         let start_col = string_width(&self.utf8_text[start_line_utf8_start..][..start_col_utf8]);
@@ -248,7 +244,7 @@ impl Snippet {
             end_col = start_col + 1; // Draw at least one caret for zero-width spans
             end_col_utf8 = start_col_utf8;
         } else {
-            end_line = match self.src_line_map.binary_search(&end) {
+            end_line = match self.line_map.binary_search_by_key(&end, |&(i, _)| i) {
                 Ok(i) => i,
                 Err(i) => i,
             };
@@ -265,10 +261,7 @@ impl Snippet {
                 let (end_line_src_start, end_line_utf8_start) = if end_line == 0 {
                     (0, 0)
                 } else {
-                    (
-                        self.src_line_map[end_line - 1],
-                        self.utf8_line_map[end_line - 1],
-                    )
+                    self.line_map[end_line - 1]
                 };
                 (end_col_utf8, last_width_is_zero) = self.gather_utf8_len(end_line_src_start..end);
                 end_col = string_width(&self.utf8_text[end_line_utf8_start..][..end_col_utf8]);
@@ -378,8 +371,7 @@ pub enum ControlCharStyle {
 pub struct SnippetBuilder {
     start_line: usize,
     utf8_text: String,
-    src_line_map: Vec<usize>,
-    utf8_line_map: Vec<usize>,
+    line_map: Vec<(usize, usize)>,
     metas: Vec<UnitMeta>,
     large_utf8_lens: Vec<(usize, usize)>,
 }
@@ -389,8 +381,7 @@ impl SnippetBuilder {
         Self {
             start_line,
             utf8_text: String::new(),
-            src_line_map: Vec::new(),
-            utf8_line_map: Vec::new(),
+            line_map: Vec::new(),
             metas: Vec::new(),
             large_utf8_lens: Vec::new(),
         }
@@ -401,8 +392,7 @@ impl SnippetBuilder {
         Snippet {
             start_line: self.start_line,
             utf8_text: self.utf8_text.into_boxed_str(),
-            src_line_map: self.src_line_map,
-            utf8_line_map: self.utf8_line_map,
+            line_map: self.line_map,
             metas: self.metas,
             large_utf8_lens: self.large_utf8_lens,
         }
@@ -414,8 +404,7 @@ impl SnippetBuilder {
     /// For example, it can be `1` for `"\n"` or `2` for `"\r\n"`.
     pub fn next_line(&mut self, orig_len: usize) {
         self.push_meta(orig_len, 0, false);
-        self.src_line_map.push(self.metas.len());
-        self.utf8_line_map.push(self.utf8_text.len());
+        self.line_map.push((self.metas.len(), self.utf8_text.len()));
     }
 
     /// Consumes `orig_len` source units without producing any rendered text.
