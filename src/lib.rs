@@ -87,7 +87,7 @@
 //! let main_style = sourceannot::MainStyle {
 //!     margin: Some(sourceannot::MarginStyle {
 //!         line_char: '│',
-//!         dot_char: '·',
+//!         discontinuity_chars: [' ', ' ', '·'],
 //!         meta: Color::Blue,
 //!     }),
 //!     horizontal_char: '─',
@@ -194,7 +194,7 @@
 //! # let main_style = sourceannot::MainStyle {
 //! #     margin: Some(sourceannot::MarginStyle {
 //! #         line_char: '│',
-//! #         dot_char: '·',
+//! #         discontinuity_chars: [' ', ' ', '·'],
 //! #         meta: Color::Blue,
 //! #     }),
 //! #     horizontal_char: '─',
@@ -455,9 +455,9 @@ pub struct MarginStyle<M> {
     /// Character used to draw the vertical separator of the margin.
     pub line_char: char,
 
-    /// Character used to draw discontinuities in the vertical separator of the
-    /// margin when intermediate source lines are omitted.
-    pub dot_char: char,
+    /// Characters used to draw discontinuities in the margin when intermediate
+    /// source lines are omitted.
+    pub discontinuity_chars: [char; 3],
 
     /// Metadata that accompanies margin characters.
     ///

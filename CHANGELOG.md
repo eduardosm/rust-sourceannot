@@ -15,6 +15,8 @@
 - New `Snipper::with_utf8()`, `Snipper::with_utf8_bytes()`,
   `Snippet::with_latin1()` and `Snippet::with_chars()` functions have been
   added.
+- `dot_char` in `MarginStyle` has been renamed to `discontinuity_chars`, which now
+  takes three characters.
 - A new `std` feature, which depends on libstd has been enabled. Default features
   need to be disabled to support `no_std`.
 
