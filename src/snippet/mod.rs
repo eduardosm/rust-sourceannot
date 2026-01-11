@@ -298,7 +298,7 @@ impl Snippet {
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum ControlCharStyle {
     Replacement,
-    Hexadecimal,
+    Codepoint,
 }
 
 /// Style for how invalid encoded sequences are represented.

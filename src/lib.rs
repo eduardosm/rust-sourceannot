@@ -69,7 +69,7 @@
 //!     1,
 //!     source,
 //!     4,
-//!     sourceannot::ControlCharStyle::Hexadecimal,
+//!     sourceannot::ControlCharStyle::Codepoint,
 //!     true,
 //! );
 //!
@@ -179,7 +179,7 @@
 //!     1,
 //!     source,
 //!     4,
-//!     sourceannot::ControlCharStyle::Hexadecimal,
+//!     sourceannot::ControlCharStyle::Codepoint,
 //!     true,
 //!     sourceannot::InvalidSeqStyle::Hexadecimal,
 //!     true,

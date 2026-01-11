@@ -79,8 +79,7 @@ fn test_tab() {
 #[test]
 fn test_line_breaks() {
     let source = "123\r\n4\r6\r\n";
-    let snippet =
-        sourceannot::Snippet::with_utf8(0, source, 4, ControlCharStyle::Hexadecimal, true);
+    let snippet = sourceannot::Snippet::with_utf8(0, source, 4, ControlCharStyle::Codepoint, true);
 
     test_render_simple(&snippet, 0..1, "123", "^  ", "ttt");
     test_render_simple(&snippet, 1..2, "123", " ^ ", "ttt");
@@ -119,12 +118,11 @@ fn test_control_char_replacement() {
 }
 
 #[test]
-fn test_control_char_hex() {
+fn test_control_char_codepoint() {
     let source = "123\n4\u{0}6\n7\u{2066}9";
 
     // alt
-    let snippet =
-        sourceannot::Snippet::with_utf8(0, source, 4, ControlCharStyle::Hexadecimal, true);
+    let snippet = sourceannot::Snippet::with_utf8(0, source, 4, ControlCharStyle::Codepoint, true);
 
     test_render_simple(&snippet, 4..5, "4<U+0000>6", "^         ", "tTTTTTTTTt");
     test_render_simple(&snippet, 5..6, "4<U+0000>6", " ^^^^^^^^ ", "tTTTTTTTTt");
@@ -137,8 +135,7 @@ fn test_control_char_hex() {
     test_render_simple(&snippet, 12..13, "7<U+2066>9", "         ^", "tTTTTTTTTt");
 
     // non-alt
-    let snippet =
-        sourceannot::Snippet::with_utf8(0, source, 4, ControlCharStyle::Hexadecimal, false);
+    let snippet = sourceannot::Snippet::with_utf8(0, source, 4, ControlCharStyle::Codepoint, false);
 
     test_render_simple(&snippet, 4..5, "4<U+0000>6", "^         ", "tttttttttt");
     test_render_simple(&snippet, 5..6, "4<U+0000>6", " ^^^^^^^^ ", "tttttttttt");

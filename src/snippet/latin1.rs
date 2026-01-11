@@ -30,7 +30,7 @@ impl Snippet {
     ///   controls (0x00 to 0x1F, excluding tab) and DEL (0x7F) are replaced
     ///   with their Unicode Control Pictures (␀, ␁, ...).
     /// - Any other control character, and C0 controls when `control_char_style`
-    ///   is [`ControlCharStyle::Hexadecimal`], are represented with the hexadecimal
+    ///   is [`ControlCharStyle::Codepoint`], are represented with the hexadecimal
     ///   value of their code point, in angle brackets, with at least four digits
     ///   (`<U+XXXX>`).
     ///

@@ -125,7 +125,7 @@ fn test_line_breaks() {
         0,
         source.as_bytes(),
         4,
-        ControlCharStyle::Hexadecimal,
+        ControlCharStyle::Codepoint,
         true,
         InvalidSeqStyle::Replacement,
         true,
@@ -182,7 +182,7 @@ fn test_control_char_replacement() {
 }
 
 #[test]
-fn test_control_char_hex() {
+fn test_control_char_codepoint() {
     let source = "123\n4\u{0}6\n7\u{2066}9";
 
     // alt
@@ -190,7 +190,7 @@ fn test_control_char_hex() {
         0,
         source.as_bytes(),
         4,
-        ControlCharStyle::Hexadecimal,
+        ControlCharStyle::Codepoint,
         true,
         InvalidSeqStyle::Replacement,
         true,
@@ -211,7 +211,7 @@ fn test_control_char_hex() {
         0,
         source.as_bytes(),
         4,
-        ControlCharStyle::Hexadecimal,
+        ControlCharStyle::Codepoint,
         false,
         InvalidSeqStyle::Replacement,
         true,
