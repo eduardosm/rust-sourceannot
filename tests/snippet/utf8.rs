@@ -88,12 +88,12 @@ fn test_line_breaks() {
     test_render_simple(&snippet, 3..4, "123", "   ^", "ttt");
     test_render_simple(&snippet, 4..5, "123", "   ^", "ttt");
     test_render_simple(&snippet, 3..5, "123", "   ^", "ttt");
-    test_render_simple(&snippet, 5..6, "4<0D>6", "^     ", "tTTTTt");
-    test_render_simple(&snippet, 6..7, "4<0D>6", " ^^^^ ", "tTTTTt");
-    test_render_simple(&snippet, 7..8, "4<0D>6", "     ^", "tTTTTt");
-    test_render_simple(&snippet, 8..9, "4<0D>6", "      ^", "tTTTTt");
-    test_render_simple(&snippet, 9..10, "4<0D>6", "      ^", "tTTTTt");
-    test_render_simple(&snippet, 8..10, "4<0D>6", "      ^", "tTTTTt");
+    test_render_simple(&snippet, 5..6, "4<U+000D>6", "^     ", "tTTTTTTTTt");
+    test_render_simple(&snippet, 6..7, "4<U+000D>6", " ^^^^^^^^ ", "tTTTTTTTTt");
+    test_render_simple(&snippet, 7..8, "4<U+000D>6", "         ^", "tTTTTTTTTt");
+    test_render_simple(&snippet, 8..9, "4<U+000D>6", "          ^", "tTTTTTTTTt");
+    test_render_simple(&snippet, 9..10, "4<U+000D>6", "          ^", "tTTTTTTTTt");
+    test_render_simple(&snippet, 8..10, "4<U+000D>6", "          ^", "tTTTTTTTTt");
     test_render_simple(&snippet, 10..10, "", "^", "");
 }
 
@@ -126,9 +126,9 @@ fn test_control_char_hex() {
     let snippet =
         sourceannot::Snippet::with_utf8(0, source, 4, ControlCharStyle::Hexadecimal, true);
 
-    test_render_simple(&snippet, 4..5, "4<00>6", "^     ", "tTTTTt");
-    test_render_simple(&snippet, 5..6, "4<00>6", " ^^^^ ", "tTTTTt");
-    test_render_simple(&snippet, 6..7, "4<00>6", "     ^", "tTTTTt");
+    test_render_simple(&snippet, 4..5, "4<U+0000>6", "^         ", "tTTTTTTTTt");
+    test_render_simple(&snippet, 5..6, "4<U+0000>6", " ^^^^^^^^ ", "tTTTTTTTTt");
+    test_render_simple(&snippet, 6..7, "4<U+0000>6", "         ^", "tTTTTTTTTt");
     test_render_simple(&snippet, 8..9, "7<U+2066>9", "^         ", "tTTTTTTTTt");
     test_render_simple(&snippet, 9..10, "7<U+2066>9", " ^^^^^^^^ ", "tTTTTTTTTt");
     test_render_simple(&snippet, 10..11, "7<U+2066>9", " ^^^^^^^^ ", "tTTTTTTTTt");
@@ -140,9 +140,9 @@ fn test_control_char_hex() {
     let snippet =
         sourceannot::Snippet::with_utf8(0, source, 4, ControlCharStyle::Hexadecimal, false);
 
-    test_render_simple(&snippet, 4..5, "4<00>6", "^     ", "tttttt");
-    test_render_simple(&snippet, 5..6, "4<00>6", " ^^^^ ", "tttttt");
-    test_render_simple(&snippet, 6..7, "4<00>6", "     ^", "tttttt");
+    test_render_simple(&snippet, 4..5, "4<U+0000>6", "^         ", "tttttttttt");
+    test_render_simple(&snippet, 5..6, "4<U+0000>6", " ^^^^^^^^ ", "tttttttttt");
+    test_render_simple(&snippet, 6..7, "4<U+0000>6", "         ^", "tttttttttt");
     test_render_simple(&snippet, 8..9, "7<U+2066>9", "^         ", "tttttttttt");
     test_render_simple(&snippet, 9..10, "7<U+2066>9", " ^^^^^^^^ ", "tttttttttt");
     test_render_simple(&snippet, 10..11, "7<U+2066>9", " ^^^^^^^^ ", "tttttttttt");
