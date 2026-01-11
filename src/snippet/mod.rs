@@ -5,6 +5,7 @@ use alloc::vec::Vec;
 mod chars;
 mod latin1;
 mod utf8;
+mod utils;
 
 pub use utf8::InvalidUtf8SeqStyle;
 
@@ -287,22 +288,11 @@ impl Snippet {
 
 /// Style for how control characters should be represented in a snippet.
 ///
-/// This style is applied by [`SnippetBuilder::maybe_push_control_char()`],
-/// which renders certain control and "invisible" characters in a safe, explicit
-/// way.
+/// This determines how functions like [`Snippet::with_utf8()`],
+/// [`Snippet::with_latin1()`], etc. handle control characters.
 ///
-/// # Rendering rules
-///
-/// - Tab (U+0009): pushes `tab_width` spaces. `alt` is ignored (treated as
-///   `false`).
-/// - C0 controls (U+0000 to U+001F, excluding tab) and DEL (U+007F):
-///   - [`ControlCharStyle::Replacement`]: Unicode Control Pictures (␀, ␁, ...).
-///   - [`ControlCharStyle::Hexadecimal`]: `<XX>` (two hex digits).
-/// - C1 controls (U+0080 to U+009F): always `<XX>`.
-/// - ZERO WIDTH JOINER (U+200D): pushes nothing (but still accounts for
-///   `orig_len`).
-/// - Bidirectional text control characters (U+202A to U+202E, U+2066 to U+2069):
-///   `<XXXX>` (four hex digits).
+/// The documentation of functions that takes a [`ControlCharStyle`]
+/// describes in detail how control characters are represented.
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum ControlCharStyle {
     Replacement,
@@ -449,75 +439,6 @@ impl SnippetBuilder {
         self.push_meta(orig_len, new_text.len(), alt);
     }
 
-    /// Pushes a visible representation of certain control/invisible characters.
-    ///
-    /// This ensures that characters that are typically invisible (or can affect
-    /// layout) are rendered in a safe, explicit way.
-    ///
-    /// If `chr` matches one of the handled cases, this method pushes a replacement
-    /// representation (which may be empty) and returns `true`. Otherwise it leaves
-    /// the builder unchanged and returns `false`. The exact replacement rules are
-    /// documented on [`ControlCharStyle`].
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # let mut builder = sourceannot::Snippet::builder(0);
-    /// # let chr = '\t';
-    /// // Assume `chr` is `char` from a UTF-8 source
-    /// let is_control = builder.maybe_push_control_char(
-    ///     chr,
-    ///     chr.len_utf8(),
-    ///     4,
-    ///     sourceannot::ControlCharStyle::Hexadecimal,
-    ///     true,
-    /// );
-    /// if !is_control {
-    ///     // If it is not a control character, push it as-is
-    ///     builder.push_char(chr, chr.len_utf8(), false);
-    /// }
-    /// ```
-    pub fn maybe_push_control_char(
-        &mut self,
-        chr: char,
-        orig_len: usize,
-        tab_width: usize,
-        style: ControlCharStyle,
-        alt: bool,
-    ) -> bool {
-        if chr == '\t' {
-            self.push_spaces(tab_width, orig_len, false);
-            return true;
-        }
-
-        if style == ControlCharStyle::Replacement {
-            if matches!(chr, '\u{00}'..='\u{1F}') {
-                let replacement = char::try_from(u32::from(chr) + 0x2400).unwrap();
-                self.push_char(replacement, orig_len, alt);
-                return true;
-            } else if chr == '\u{7F}' {
-                let replacement = '␡';
-                self.push_char(replacement, orig_len, alt);
-                return true;
-            }
-        }
-
-        if matches!(chr, '\u{00}'..='\u{1F}' | '\u{7F}'..='\u{9F}') {
-            self.push_fmt(format_args!("<{:02X}>", u32::from(chr)), orig_len, alt);
-            true
-        } else if chr == '\u{200D}' {
-            // Replace ZERO WIDTH JOINER with nothing
-            self.push_empty(orig_len);
-            true
-        } else if matches!(chr, '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}') {
-            // Replace bidirectional text control characters
-            self.push_fmt(format_args!("<{:04X}>", u32::from(chr)), orig_len, alt);
-            true
-        } else {
-            false
-        }
-    }
-
     fn push_meta(&mut self, orig_len: usize, utf8_len: usize, alt: bool) {
         if orig_len == 0 {
             return;
@@ -538,6 +459,18 @@ impl SnippetBuilder {
             self.metas.push(UnitMeta::extra());
         }
     }
+}
+
+#[inline]
+pub fn char_should_be_replaced(chr: char) -> bool {
+    matches!(
+        chr,
+        '\u{00}'..='\u{1F}' // C0 controls
+        | '\u{7F}'..='\u{9F}' // DEL and C1 controls
+        | '\u{200D}' // ZERO WIDTH JOINER
+        | '\u{202A}'..='\u{202E}' // Bidirectional text controls
+        | '\u{2066}'..='\u{2069}' // More bidirectional text controls
+    )
 }
 
 fn string_width(s: &str) -> usize {

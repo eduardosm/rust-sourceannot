@@ -1,3 +1,4 @@
+use super::utils::build_with_char_iter;
 use super::{ControlCharStyle, Snippet};
 
 impl Snippet {
@@ -20,10 +21,21 @@ impl Snippet {
     ///
     /// # Control characters
     ///
-    /// Tabs (`\t`) are expanded to `tab_width` spaces. Other control characters
-    /// are rendered according to `control_char_style` (see [`ControlCharStyle`]).
-    /// If `control_char_alt` is `true`, those replacement fragments are marked as
-    /// "alternate" text.
+    /// Control characters are those for which
+    /// [`char_should_be_replaced()`](crate::char_should_be_replaced)
+    /// returns `true`.
+    ///
+    /// - Tabs (U+0009) are replaced with `tab_width` spaces and never marked as
+    ///   alternate text.
+    /// - When `control_char_style` is [`ControlCharStyle::Replacement`], C0
+    ///   controls (U+0000 to U+001F, excluding tab) and DEL (U+007F) are
+    ///   replaced with their Unicode Control Pictures (␀, ␁, ...).
+    /// - Any other control character, and C0 controls when `control_char_style`
+    ///   is [`ControlCharStyle::Hexadecimal`], are represented with their
+    ///   hexadecimal value, in angle brackets, with two digits (`<XX>`).
+    ///
+    /// Control characters are rendered as alternate text when `control_char_alt` is
+    /// `true`, with the exception of tabs, which are never marked as alternate text.
     pub fn with_latin1(
         start_line: usize,
         source: &[u8],
@@ -32,28 +44,13 @@ impl Snippet {
         control_char_alt: bool,
     ) -> Self {
         let mut builder = Snippet::builder(start_line);
-
-        let mut chars = source.iter();
-        while let Some(&chr) = chars.next() {
-            if chr == b'\r' && chars.as_slice().starts_with(b"\n") {
-                builder.next_line(2);
-                chars.next().unwrap();
-            } else if chr == b'\n' {
-                builder.next_line(1);
-            } else {
-                let is_control = builder.maybe_push_control_char(
-                    chr.into(),
-                    1,
-                    tab_width,
-                    control_char_style,
-                    control_char_alt,
-                );
-                if !is_control {
-                    builder.push_char(chr.into(), 1, false);
-                }
-            }
-        }
-
+        build_with_char_iter::<0>(
+            &mut builder,
+            source.iter().copied().map(char::from),
+            tab_width,
+            control_char_style,
+            control_char_alt,
+        );
         builder.finish()
     }
 }

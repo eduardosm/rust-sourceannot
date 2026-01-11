@@ -269,7 +269,9 @@ mod annots;
 mod snippet;
 
 pub use annots::Annotations;
-pub use snippet::{ControlCharStyle, InvalidUtf8SeqStyle, Snippet, SnippetBuilder};
+pub use snippet::{
+    ControlCharStyle, InvalidUtf8SeqStyle, Snippet, SnippetBuilder, char_should_be_replaced,
+};
 
 /// Trait that consumes a rendered annotated snippet.
 ///
