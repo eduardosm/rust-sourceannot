@@ -1,17 +1,5 @@
 use super::utils::build_with_char_iter;
-use super::{ControlCharStyle, Snippet};
-
-/// Style for how invalid UTF-8 sequences are represented.
-#[derive(Copy, Clone, PartialEq, Eq)]
-pub enum InvalidUtf8SeqStyle {
-    /// Represent invalid UTF-8 as the replacement character U+FFFD (`�`).
-    Replacement,
-    /// Represent invalid UTF-8 as hexadecimal byte values, each byte as `<XX>`.
-    ///
-    /// This is useful when you want the invalid bytes to be visible and
-    /// "countable" in the rendered output.
-    Hexadecimal,
-}
+use super::{ControlCharStyle, InvalidSeqStyle, Snippet};
 
 impl Snippet {
     /// Creates a [`Snippet`] from a valid UTF-8 source.
@@ -38,8 +26,7 @@ impl Snippet {
     /// [`char_should_be_replaced()`](crate::char_should_be_replaced)
     /// returns `true`.
     ///
-    /// - Tabs (U+0009) are replaced with `tab_width` spaces and never marked as
-    ///   alternate text.
+    /// - Tabs (U+0009) are replaced with `tab_width` spaces.
     /// - ZERO WIDTH JOINER (U+200D) is replaced with nothing (but still accounts
     ///   for its original source unit length).
     /// - When `control_char_style` is [`ControlCharStyle::Replacement`], C0
@@ -89,8 +76,11 @@ impl Snippet {
     ///
     /// # Control characters
     ///
-    /// - Tabs (U+0009) are replaced with `tab_width` spaces and never marked as
-    ///   alternate text.
+    /// Control characters are those for which
+    /// [`char_should_be_replaced()`](crate::char_should_be_replaced)
+    /// returns `true`.
+    ///
+    /// - Tabs (U+0009) are replaced with `tab_width` spaces.
     /// - ZERO WIDTH JOINER (U+200D) is replaced with nothing (but still accounts
     ///   for its original source unit length).
     /// - When `control_char_style` is [`ControlCharStyle::Replacement`], C0
@@ -109,16 +99,22 @@ impl Snippet {
     ///
     /// # Invalid UTF-8
     ///
-    /// When malformed UTF-8 is encountered, it is rendered according to
-    /// `invalid_seq_style` (see [`InvalidUtf8SeqStyle`]). If `invalid_seq_alt` is
-    /// `true`, the replacement fragments are marked as "alternate" text.
+    /// - When `invalid_seq_style` is [`InvalidSeqStyle::Replacement`], each
+    ///   invalid UTF-8 sequence is replaced with the Unicode Replacement Character
+    ///   (U+FFFD, `�`).
+    /// - When `invalid_seq_style` is [`InvalidSeqStyle::Hexadecimal`], each byte
+    ///   of an invalid UTF-8 sequence is represented with its hexadecimal value,
+    ///   in angle brackets, with two digits (`<XX>`).
+    ///
+    /// If `invalid_seq_alt` is `true`, the replacement fragments are marked as
+    /// "alternate" text.
     pub fn with_utf8_bytes(
         start_line: usize,
         source: &[u8],
         tab_width: usize,
         control_char_style: ControlCharStyle,
         control_char_alt: bool,
-        invalid_seq_style: InvalidUtf8SeqStyle,
+        invalid_seq_style: InvalidSeqStyle,
         invalid_seq_alt: bool,
     ) -> Self {
         let mut builder = Snippet::builder(start_line);
@@ -135,10 +131,10 @@ impl Snippet {
             let invalid_utf8 = source_chunk.invalid();
             if !invalid_utf8.is_empty() {
                 match invalid_seq_style {
-                    InvalidUtf8SeqStyle::Replacement => {
+                    InvalidSeqStyle::Replacement => {
                         builder.push_char('\u{FFFD}', invalid_utf8.len(), invalid_seq_alt);
                     }
-                    InvalidUtf8SeqStyle::Hexadecimal => {
+                    InvalidSeqStyle::Hexadecimal => {
                         for &byte in invalid_utf8.iter() {
                             builder.push_fmt(format_args!("<{byte:02X}>"), 1, invalid_seq_alt);
                         }

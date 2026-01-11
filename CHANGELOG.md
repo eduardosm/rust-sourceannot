@@ -13,8 +13,8 @@
   `Snippet::build_from_latin1()` and `Snippet::build_from_latin1_ex()` functions
   have been removed.
 - New `Snippet::with_utf8()`, `Snippet::with_utf8_bytes()`,
-  `Snippet::with_latin1()` and `Snippet::with_chars()` functions have been
-  added.
+  `Snippet::with_latin1()`, `Snippet::with_chars()` and
+  `Snippet::with_utf16_words()` functions have been added.
 - `dot_char` in `MarginStyle` has been renamed to `discontinuity_chars`, which now
   takes three characters.
 - Styles are now passed by reference.

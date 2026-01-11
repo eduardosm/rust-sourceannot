@@ -11,6 +11,7 @@
 
 mod chars;
 mod latin1;
+mod utf16_words;
 mod utf8;
 mod utf8_bytes;
 

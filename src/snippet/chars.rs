@@ -22,8 +22,7 @@ impl Snippet {
     /// [`char_should_be_replaced()`](crate::char_should_be_replaced)
     /// returns `true`.
     ///
-    /// - Tabs (U+0009) are replaced with `tab_width` spaces and never marked as
-    ///   alternate text.
+    /// - Tabs (U+0009) are replaced with `tab_width` spaces.
     /// - ZERO WIDTH JOINER (U+200D) is replaced with nothing (but still accounts
     ///   for its original source unit length).
     /// - When `control_char_style` is [`ControlCharStyle::Replacement`], C0
