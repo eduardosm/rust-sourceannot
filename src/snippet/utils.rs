@@ -54,32 +54,8 @@ pub(super) fn handle_control_char<const UTF: u8>(
             // Replace ZERO WIDTH JOINER with nothing
             builder.push_empty(orig_len);
         }
-        ('\u{00}'..='\u{FF}', _) if UTF == 0 => {
-            // Single-byte character
-            builder.push_fmt(
-                format_args!("<{:02X}>", u32::from(chr)),
-                orig_len,
-                control_char_alt,
-            );
-        }
-        ('\u{00}'..='\u{7F}', _) if UTF == 8 => {
-            // Single-byte UTF-8 character
-            builder.push_fmt(
-                format_args!("<{:02X}>", u32::from(chr)),
-                orig_len,
-                control_char_alt,
-            );
-        }
-        ('\u{0000}'..='\u{FFFF}', _) if UTF == 16 => {
-            // Single-word UTF-16 character
-            builder.push_fmt(
-                format_args!("<{:04X}>", u32::from(chr)),
-                orig_len,
-                control_char_alt,
-            );
-        }
         (_, _) => {
-            // Other cases are represented as <U+XXXX>
+            // Other cases are represented as `<U+XXXX>`
             builder.push_fmt(
                 format_args!("<U+{:04X}>", u32::from(chr)),
                 orig_len,
