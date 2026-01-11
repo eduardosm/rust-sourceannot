@@ -199,13 +199,12 @@ fn test_control_char_hex() {
     test_render_simple(&snippet, 4..5, "4<00>6", "^     ", "tTTTTt");
     test_render_simple(&snippet, 5..6, "4<00>6", " ^^^^ ", "tTTTTt");
     test_render_simple(&snippet, 6..7, "4<00>6", "     ^", "tTTTTt");
-    test_render_simple(&snippet, 8..9, "7<2066>9", "^       ", "tTTTTTTt");
-    test_render_simple(&snippet, 9..10, "7<2066>9", " ^^^^^^ ", "tTTTTTTt");
-    test_render_simple(&snippet, 10..11, "7<2066>9", " ^^^^^^ ", "tTTTTTTt");
-    test_render_simple(&snippet, 11..12, "7<2066>9", " ^^^^^^ ", "tTTTTTTt");
-    test_render_simple(&snippet, 9..12, "7<2066>9", " ^^^^^^ ", "tTTTTTTt");
-    test_render_simple(&snippet, 12..13, "7<2066>9", "       ^", "tTTTTTTt");
-
+    test_render_simple(&snippet, 8..9, "7<U+2066>9", "^         ", "tTTTTTTTTt");
+    test_render_simple(&snippet, 9..10, "7<U+2066>9", " ^^^^^^^^ ", "tTTTTTTTTt");
+    test_render_simple(&snippet, 10..11, "7<U+2066>9", " ^^^^^^^^ ", "tTTTTTTTTt");
+    test_render_simple(&snippet, 11..12, "7<U+2066>9", " ^^^^^^^^ ", "tTTTTTTTTt");
+    test_render_simple(&snippet, 9..12, "7<U+2066>9", " ^^^^^^^^ ", "tTTTTTTTTt");
+    test_render_simple(&snippet, 12..13, "7<U+2066>9", "         ^", "tTTTTTTTTt");
     // non-alt
     let snippet = sourceannot::Snippet::with_utf8_bytes(
         0,
@@ -220,12 +219,12 @@ fn test_control_char_hex() {
     test_render_simple(&snippet, 4..5, "4<00>6", "^     ", "tttttt");
     test_render_simple(&snippet, 5..6, "4<00>6", " ^^^^ ", "tttttt");
     test_render_simple(&snippet, 6..7, "4<00>6", "     ^", "tttttt");
-    test_render_simple(&snippet, 8..9, "7<2066>9", "^       ", "tttttttt");
-    test_render_simple(&snippet, 9..10, "7<2066>9", " ^^^^^^ ", "tttttttt");
-    test_render_simple(&snippet, 10..11, "7<2066>9", " ^^^^^^ ", "tttttttt");
-    test_render_simple(&snippet, 11..12, "7<2066>9", " ^^^^^^ ", "tttttttt");
-    test_render_simple(&snippet, 9..12, "7<2066>9", " ^^^^^^ ", "tttttttt");
-    test_render_simple(&snippet, 12..13, "7<2066>9", "       ^", "tttttttt");
+    test_render_simple(&snippet, 8..9, "7<U+2066>9", "^         ", "tttttttttt");
+    test_render_simple(&snippet, 9..10, "7<U+2066>9", " ^^^^^^^^ ", "tttttttttt");
+    test_render_simple(&snippet, 10..11, "7<U+2066>9", " ^^^^^^^^ ", "tttttttttt");
+    test_render_simple(&snippet, 11..12, "7<U+2066>9", " ^^^^^^^^ ", "tttttttttt");
+    test_render_simple(&snippet, 9..12, "7<U+2066>9", " ^^^^^^^^ ", "tttttttttt");
+    test_render_simple(&snippet, 12..13, "7<U+2066>9", "         ^", "tttttttttt");
 }
 
 #[test]

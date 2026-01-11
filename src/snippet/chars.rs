@@ -1,3 +1,4 @@
+use super::utils::build_with_char_iter;
 use super::{ControlCharStyle, Snippet};
 
 impl Snippet {
@@ -17,10 +18,24 @@ impl Snippet {
     ///
     /// # Control characters
     ///
-    /// Tabs (`\t`) are expanded to `tab_width` spaces. Other control characters
-    /// are rendered according to `control_char_style` (see [`ControlCharStyle`]).
-    /// If `control_char_alt` is `true`, those replacement fragments are marked as
-    /// "alternate" text.
+    /// Control characters are those for which
+    /// [`char_should_be_replaced()`](crate::char_should_be_replaced)
+    /// returns `true`.
+    ///
+    /// - Tabs (U+0009) are replaced with `tab_width` spaces and never marked as
+    ///   alternate text.
+    /// - ZERO WIDTH JOINER (U+200D) is replaced with nothing (but still accounts
+    ///   for its original source unit length).
+    /// - When `control_char_style` is [`ControlCharStyle::Replacement`], C0
+    ///   controls (U+0000 to U+001F, excluding tab) and DEL (U+007F) are
+    ///   replaced with their Unicode Control Pictures (␀, ␁, ...).
+    /// - Any other control character, and C0 controls when `control_char_style`
+    ///   is [`ControlCharStyle::Hexadecimal`], are represented with the hexadecimal
+    ///   value of their code point, in angle brackets, with at least four digits
+    ///   (`<U+XXXX>`).
+    ///
+    /// Control characters are rendered as alternate text when `control_char_alt` is
+    /// `true`, with the exception of tabs, which are never marked as alternate text.
     ///
     /// # Examples
     ///
@@ -58,54 +73,14 @@ impl Snippet {
     where
         I: IntoIterator<Item = char>,
     {
-        let mut snippet = Snippet::builder(start_line);
-
-        let mut chars = source.into_iter();
-        let mut last_is_cr = false;
-        loop {
-            let chr = chars.next();
-            if last_is_cr {
-                if let Some('\n') = chr {
-                    snippet.next_line(2);
-                    last_is_cr = false;
-                    continue;
-                } else {
-                    // Lone `\r`
-                    let chr_len = '\r'.len_utf8();
-                    let is_control = snippet.maybe_push_control_char(
-                        '\r',
-                        chr_len,
-                        tab_width,
-                        control_char_style,
-                        control_char_alt,
-                    );
-                    assert!(is_control);
-                }
-            }
-
-            let Some(chr) = chr else {
-                break;
-            };
-
-            last_is_cr = chr == '\r';
-            if last_is_cr {
-                // do nothing yet, depends on the next char being `\n`
-            } else if chr == '\n' {
-                snippet.next_line(1);
-            } else {
-                let is_control = snippet.maybe_push_control_char(
-                    chr,
-                    1,
-                    tab_width,
-                    control_char_style,
-                    control_char_alt,
-                );
-                if !is_control {
-                    snippet.push_char(chr, 1, false);
-                }
-            }
-        }
-
-        snippet.finish()
+        let mut builder = Snippet::builder(start_line);
+        build_with_char_iter::<32>(
+            &mut builder,
+            source,
+            tab_width,
+            control_char_style,
+            control_char_alt,
+        );
+        builder.finish()
     }
 }

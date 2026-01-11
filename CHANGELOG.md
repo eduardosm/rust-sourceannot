@@ -27,9 +27,17 @@
 - Fixed pancking with tab widths greater than 127.
 - Line numbers in margins are now correctly aligned to the right.
 
+### Added
+
+- Some control characters can now be optionally represented with their Unicode
+  Control Pictures.
+- Invalid UTF-8 sequences can now optionally represented with the Unicode
+  Replacement Character.
+
 ### Changed
 
 - `Annotations::render()` does not require `M: Clone` anymore.
+- More control characters are replaced with a special representation.
 
 ### Other
 
