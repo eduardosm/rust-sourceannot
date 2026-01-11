@@ -25,8 +25,7 @@ impl Snippet {
     /// [`char_should_be_replaced()`](crate::char_should_be_replaced)
     /// returns `true`.
     ///
-    /// - Tabs (U+0009) are replaced with `tab_width` spaces and never marked as
-    ///   alternate text.
+    /// - Tabs (U+0009) are replaced with `tab_width` spaces.
     /// - When `control_char_style` is [`ControlCharStyle::Replacement`], C0
     ///   controls (U+0000 to U+001F, excluding tab) and DEL (U+007F) are
     ///   replaced with their Unicode Control Pictures (␀, ␁, ...).

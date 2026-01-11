@@ -24,6 +24,8 @@
 //! - [`Snippet::with_utf8()`] uses **byte offsets** into the original `&str`.
 //! - [`Snippet::with_utf8_bytes()`] uses **byte offsets** into the original `&[u8]`.
 //! - [`Snippet::with_latin1()`] uses **byte offsets** into the original `&[u8]`.
+//! - [`Snippet::with_utf16_words()`] uses **16-bit word offsets** into the
+//!   original `u16` sequence.
 //! - [`Snippet::with_chars()`] uses **[`char`] indices** into the original
 //!   character sequence.
 //!
@@ -179,7 +181,7 @@
 //!     4,
 //!     sourceannot::ControlCharStyle::Hexadecimal,
 //!     true,
-//!     sourceannot::InvalidUtf8SeqStyle::Hexadecimal,
+//!     sourceannot::InvalidSeqStyle::Hexadecimal,
 //!     true,
 //! );
 //!
@@ -270,7 +272,7 @@ mod snippet;
 
 pub use annots::Annotations;
 pub use snippet::{
-    ControlCharStyle, InvalidUtf8SeqStyle, Snippet, SnippetBuilder, char_should_be_replaced,
+    ControlCharStyle, InvalidSeqStyle, Snippet, SnippetBuilder, char_should_be_replaced,
 };
 
 /// Trait that consumes a rendered annotated snippet.

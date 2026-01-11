@@ -4,10 +4,9 @@ use alloc::vec::Vec;
 
 mod chars;
 mod latin1;
+mod utf16;
 mod utf8;
 mod utils;
-
-pub use utf8::InvalidUtf8SeqStyle;
 
 /// A snippet of source code prepared for annotated rendering.
 ///
@@ -21,6 +20,9 @@ pub use utf8::InvalidUtf8SeqStyle;
 ///   [`Snippet::with_latin1()`] treat a unit as a **byte** in the original byte
 ///   sequence. In the UTF-8 case, a valid printable character may correspond to
 ///   1 to 4 source units.
+/// - [`Snippet::with_utf16_words()`] treats a unit as a **16-bit word** in the
+///   original UTF-16 sequence. A valid printable character may correspond to
+///   1 or 2 source units.
 /// - [`Snippet::with_chars()`] treats a unit as a **[`char`]** in the original
 ///   character sequence.
 /// - [`Snippet::builder()`] allows units to be defined by the caller.
@@ -299,6 +301,19 @@ pub enum ControlCharStyle {
     Hexadecimal,
 }
 
+/// Style for how invalid encoded sequences are represented.
+///
+/// This determines how functions like [`Snippet::with_utf8_bytes()`]
+/// and [`Snippet::with_utf16_words()`] handle invalid sequences.
+///
+/// The documentation of functions that takes an [`InvalidSeqStyle`]
+/// describes in detail how invalid sequences are represented.
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum InvalidSeqStyle {
+    Replacement,
+    Hexadecimal,
+}
+
 /// Incrementally constructs a [`Snippet`].
 ///
 /// This type is the low-level building block that allows to create snippets in
@@ -462,6 +477,19 @@ impl SnippetBuilder {
 }
 
 #[inline]
+/// Returns whether `chr` should be replaced/escaped when building a [`Snippet`].
+///
+/// This identifies characters that are typically undesirable in rendered source
+/// snippets because they are control codes, invisible format characters, or can
+/// affect bidirectional text rendering.
+///
+/// Specifically, this returns `true` for:
+///
+/// - C0 control characters (U+0000 to U+001F)
+/// - DEL (U+007F)
+/// - C1 control characters (U+0080 to U+009F)
+/// - ZERO WIDTH JOINER (U+200D)
+/// - Bidirectional controls (U+202A to U+202E, U+2066 to U+2069)
 pub fn char_should_be_replaced(chr: char) -> bool {
     matches!(
         chr,
