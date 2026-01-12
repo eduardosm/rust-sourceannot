@@ -219,6 +219,33 @@ fn test_render_multi_line() {
     );
 
     let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..12, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(1..12, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    test_render(
+        &annots,
+        0,
+        0,
+        indoc::indoc! {"
+            1 │    1234
+              │  ╭──^
+              │ ╭│──-
+              · ││ 
+            3 │ ││ 90ab
+              │ │╰──^ test 1
+              │ ╰───- test 2
+        "},
+        indoc::indoc! {"
+            msmsssstaaas
+            ssmsslllls
+            ssmsLlLLLs
+            mmmsLlss
+            msmsLlsaatts
+            ssmsLlllls111111s
+            ssmsLLLLLs222222s
+        "},
+    );
+
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
     annots.add_annotation(0..11, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
     annots.add_annotation(6..18, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
     test_render(
@@ -242,6 +269,33 @@ fn test_render_multi_line() {
             ssmsLllls111111s
             msmsLssbbbts
             ssmsLLLLLLs222222s
+        "},
+    );
+
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(6..18, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(0..11, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    test_render(
+        &annots,
+        0,
+        0,
+        indoc::indoc! {"
+            1 │ ╭  1234
+            2 │ │  5678
+              │ │╭──^
+            3 │ ││ 90ab
+              │ ╰│─- test 2
+            4 │  │ cdef
+              │  ╰───^ test 1
+        "},
+        indoc::indoc! {"
+            msmsLssbbbbs
+            msmsLsstaaas
+            ssmsLlllls
+            msmsLlsbttts
+            ssmsLlLLs222222s
+            msmsslsaaats
+            ssmssllllls111111s
         "},
     );
 
@@ -296,6 +350,33 @@ fn test_render_multi_line() {
             mmmsLss
             msmsLsbbbts
             ssmsLLLLLs222222s
+        "},
+    );
+
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(6..18, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(0..7, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    test_render(
+        &annots,
+        0,
+        0,
+        indoc::indoc! {"
+            1 │ ╭ 1234
+            2 │ │ 5678
+              │ ╰──- test 2
+              │ ╭──^
+              · │ 
+            4 │ │ cdef
+              │ ╰───^ test 1
+        "},
+        indoc::indoc! {"
+            msmsLsbbbbs
+            msmsLsbaaas
+            ssmsLLLLs222222s
+            ssmslllls
+            mmmslss
+            msmslsaaats
+            ssmsllllls111111s
         "},
     );
 }
@@ -371,6 +452,56 @@ fn test_render_mixed_single_line_and_multi_line() {
             ssmslssLLLs222222s
             msmslsaatts
             ssmslllls111111s
+        "},
+    );
+
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..12, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(0..4, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    test_render(
+        &annots,
+        0,
+        0,
+        indoc::indoc! {"
+            1 │   1234
+              │   ---- test 2
+              │ ╭──^
+              · │ 
+            3 │ │ 90ab
+              │ ╰──^ test 1
+        "},
+        indoc::indoc! {"
+            msmsssbaaas
+            ssmsssLLLLs222222s
+            ssmslllls
+            mmmslss
+            msmslsaatts
+            ssmslllls111111s
+        "},
+    );
+
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(0..4, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(1..12, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    test_render(
+        &annots,
+        0,
+        0,
+        indoc::indoc! {"
+            1 │   1234
+              │   ^^^^ test 1
+              │ ╭──-
+              · │ 
+            3 │ │ 90ab
+              │ ╰──- test 2
+        "},
+        indoc::indoc! {"
+            msmsssaaaas
+            ssmssslllls111111s
+            ssmsLLLLs
+            mmmsLss
+            msmsLsbbtts
+            ssmsLLLLs222222s
         "},
     );
 }
