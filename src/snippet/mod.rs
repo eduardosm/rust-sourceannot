@@ -338,40 +338,46 @@ pub enum InvalidSeqStyle {
 /// # Example
 ///
 /// ```
-/// /// Builds a snippet from ASCII source bytes.
+/// /// Builds a snippet from UTF-8
 /// ///
 /// /// `"\n"` and `"\r\n"` are treated as line breaks and tabs are expanded to
-/// /// 4 spaces. Control and non-ASCII characters are represented as `<XX>`.
-/// fn build_ascii_snippet(source: &[u8]) -> sourceannot::Snippet {
+/// /// 4 spaces. Control characters are represented with `<U+XXXX>`.
+/// fn build_snippet(source: &str) -> sourceannot::Snippet {
 ///     let mut builder = sourceannot::Snippet::builder(1);
-///     let mut rest = source;
-///     while let Some((&byte, new_rest)) = rest.split_first() {
-///         rest = new_rest;
-///         if byte == b'\n' {
-///             // `"\n"` line break
-///             builder.next_line(1);
-///         } else if byte == b'\r' {
-///             if let Some(new_rest) = rest.strip_prefix(b"\n") {
-///                 // `"\r\n"` line break
-///                 rest = new_rest;
+///     let mut chars = source.chars();
+///
+///     if let Some(mut cur_chr) = chars.next() {
+///         loop {
+///             let mut next_chr = chars.next();
+///             if cur_chr == '\r' && next_chr == Some('\n') {
 ///                 builder.next_line(2);
+///                 next_chr = chars.next();
+///             } else if cur_chr == '\n' {
+///                 builder.next_line(1);
+///             } else if cur_chr == '\t' {
+///                 // Equivalent to `builder.push_str("    ", 1, false);`
+///                 builder.push_spaces(4, 1, false);
+///             } else if sourceannot::char_should_be_replaced(cur_chr) {
+///                 builder.push_fmt(
+///                     format_args!("<U+{:04X}>", u32::from(cur_chr)),
+///                     cur_chr.len_utf8(),
+///                     true,
+///                 );
 ///             } else {
-///                 // Lone `"\r"`, treat as a control character
-///                 builder.push_str("<0D>", 1, true);
+///                 builder.push_char(cur_chr, cur_chr.len_utf8(), false);
 ///             }
-///         } else if byte == b'\t' {
-///             // Tab as 4 spaces
-///             builder.push_spaces(4, 1, false);
-///         } else if matches!(byte, b' '..=b'~') {
-///             // Printable ASCII
-///             builder.push_char(byte.into(), 1, false);
-///         } else {
-///             // Control or non-ASCII
-///             builder.push_fmt(format_args!("<{byte:02X}>"), 1, true);
+///
+///             cur_chr = match next_chr {
+///                 Some(c) => c,
+///                 None => break,
+///             };
 ///         }
 ///     }
+///
 ///     builder.finish()
 /// }
+///
+/// let snippet = build_snippet("Hello world");
 /// ```
 pub struct SnippetBuilder {
     start_line: usize,
