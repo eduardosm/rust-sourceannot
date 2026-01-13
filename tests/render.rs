@@ -125,14 +125,14 @@ fn test_render_single_line() {
         indoc::indoc! {"
             1 │ 1234
               │  ^^^ test 1
-              · 
+              ·
             3 │ 90ab
               │ -- test 2
         "},
         indoc::indoc! {"
             msmstaaas
             ssmssllls111111s
-            mmmss
+            mmms
             msmsbbtts
             ssmsLLs222222s
         "},
@@ -205,14 +205,14 @@ fn test_render_multi_line() {
         indoc::indoc! {"
             1 │   1234
               │ ╭──^
-              · │ 
+              · │
             3 │ │ 90ab
               │ ╰──^ test
         "},
         indoc::indoc! {"
             msmssstaaas
             ssmslllls
-            mmmslss
+            mmmsls
             msmslsaatts
             ssmslllls1111s
         "},
@@ -229,7 +229,7 @@ fn test_render_multi_line() {
             1 │    1234
               │  ╭──^
               │ ╭│──-
-              · ││ 
+              · ││
             3 │ ││ 90ab
               │ │╰──^ test 1
               │ ╰───- test 2
@@ -238,7 +238,7 @@ fn test_render_multi_line() {
             msmsssstaaas
             ssmsslllls
             ssmsLlLLLs
-            mmmsLlss
+            mmmsLls
             msmsLlsaatts
             ssmsLlllls111111s
             ssmsLLLLLs222222s
@@ -338,7 +338,7 @@ fn test_render_multi_line() {
             2 │ │ 5678
               │ ╰──^ test 1
               │ ╭──-
-              · │ 
+              · │
             4 │ │ cdef
               │ ╰───- test 2
         "},
@@ -347,7 +347,7 @@ fn test_render_multi_line() {
             msmslsaabbs
             ssmslllls111111s
             ssmsLLLLs
-            mmmsLss
+            mmmsLs
             msmsLsbbbts
             ssmsLLLLLs222222s
         "},
@@ -365,7 +365,7 @@ fn test_render_multi_line() {
             2 │ │ 5678
               │ ╰──- test 2
               │ ╭──^
-              · │ 
+              · │
             4 │ │ cdef
               │ ╰───^ test 1
         "},
@@ -374,7 +374,7 @@ fn test_render_multi_line() {
             msmsLsbaaas
             ssmsLLLLs222222s
             ssmslllls
-            mmmslss
+            mmmsls
             msmslsaaats
             ssmsllllls111111s
         "},
@@ -403,14 +403,14 @@ fn test_render_multi_line_wide_break() {
         indoc::indoc! {"
             1 │   1234
               │ ╭──^
-              · │ 
+              · │
             3 │ │ 90ab
               │ ╰──^ test
         "},
         indoc::indoc! {"
             msmssstaaas
             ssmslllls
-            mmmslss
+            mmmsls
             msmslsaatts
             ssmslllls1111s
         "},
@@ -466,7 +466,7 @@ fn test_render_mixed_single_line_and_multi_line() {
             1 │   1234
               │   ---- test 2
               │ ╭──^
-              · │ 
+              · │
             3 │ │ 90ab
               │ ╰──^ test 1
         "},
@@ -474,7 +474,7 @@ fn test_render_mixed_single_line_and_multi_line() {
             msmsssbaaas
             ssmsssLLLLs222222s
             ssmslllls
-            mmmslss
+            mmmsls
             msmslsaatts
             ssmslllls111111s
         "},
@@ -491,7 +491,7 @@ fn test_render_mixed_single_line_and_multi_line() {
             1 │   1234
               │   ^^^^ test 1
               │ ╭──-
-              · │ 
+              · │
             3 │ │ 90ab
               │ ╰──- test 2
         "},
@@ -499,7 +499,7 @@ fn test_render_mixed_single_line_and_multi_line() {
             msmsssaaaas
             ssmssslllls111111s
             ssmsLLLLs
-            mmmsLss
+            mmmsLs
             msmsLsbbtts
             ssmsLLLLs222222s
         "},
@@ -1411,14 +1411,14 @@ fn test_render_line_numbers() {
         indoc::indoc! {"
              99 │ 1234
                 │  ^^^ test 1
-                · 
+                ·
             101 │ 90ab
                 │ -- test 2
         "},
         indoc::indoc! {"
             smmsmstaaas
             ssssmssllls111111s
-            ssmmmss
+            ssmmms
             mmmsmsbbtts
             ssssmsLLs222222s
         "},
@@ -1451,14 +1451,14 @@ fn test_render_different_discontinuity() {
         indoc::indoc! {"
             1 │ 1234
               │  ^^^ test 1
-            ... 
+            ...
             3 │ 90ab
               │ -- test 2
         "},
         indoc::indoc! {"
             msmstaaas
             ssmssllls111111s
-            mmmss
+            mmms
             msmsbbtts
             ssmsLLs222222s
         "},
