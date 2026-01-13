@@ -181,6 +181,29 @@ fn test_render_single_line() {
             ssms222222s
         "},
     );
+
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..2, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(1..2, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    test_render(
+        &annots,
+        0,
+        0,
+        indoc::indoc! {"
+            1 │ 1234
+              │  ^
+              │  │
+              │  │test 2
+              │  test 1
+        "},
+        indoc::indoc! {"
+            msmstatts
+            ssmssls
+            ssmssls
+            ssmssl222222s
+            ssmss111111s
+        "},
+    );
 }
 
 #[test]
@@ -296,6 +319,33 @@ fn test_render_multi_line() {
             ssmsLlLLs222222s
             msmsslsaaats
             ssmssllllls111111s
+        "},
+    );
+
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(6..11, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(0..18, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    test_render(
+        &annots,
+        0,
+        0,
+        indoc::indoc! {"
+            1 │ ╭  1234
+            2 │ │  5678
+              │ │╭──^
+            3 │ ││ 90ab
+              │ │╰─^ test 1
+            4 │ │  cdef
+              │ ╰────- test 2
+        "},
+        indoc::indoc! {"
+            msmsLssbbbbs
+            msmsLsstaaas
+            ssmsLlllls
+            msmsLlsattts
+            ssmsLllls111111s
+            msmsLssbbbts
+            ssmsLLLLLLs222222s
         "},
     );
 
@@ -1466,7 +1516,7 @@ fn test_render_different_discontinuity() {
 }
 
 #[test]
-fn test_render_no_margin_single_line() {
+fn test_render_no_margin() {
     // "1234\n5678\n90ab\ncdef\n"
     let lines = ["1234", "5678", "90ab", "cdef"];
     let mut builder = Snippet::builder(1);
@@ -1510,23 +1560,6 @@ fn test_render_no_margin_single_line() {
             LLs222222s
         "},
     );
-}
-
-#[test]
-fn test_render_no_margin_multi_line() {
-    // "1234\n5678\n90ab\ncdef\n"
-    let lines = ["1234", "5678", "90ab", "cdef"];
-    let mut builder = Snippet::builder(1);
-    for line in &lines {
-        for c in line.chars() {
-            builder.push_char(c, 1, false);
-        }
-        builder.next_line(1);
-    }
-    let snippet = builder.finish();
-
-    let mut main_style = MAIN_STYLE;
-    main_style.margin = None;
 
     let mut annots = Annotations::new(&snippet, &main_style);
     annots.add_annotation(0..11, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
