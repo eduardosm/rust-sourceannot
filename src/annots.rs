@@ -318,16 +318,17 @@ impl<'a, M> PreProcAnnots<'a, M> {
             Ok(())
         };
         // Renders a margin discontinuity:
-        let put_margin_discont = |out: &mut O| {
+        let put_margin_discont = |out: &mut O, space_after: bool| {
             if let Some(ref margin_style) = self.main_style.margin {
                 for _ in 0..(max_line_no_width - 1) {
                     out.put_char(' ', &self.main_style.spaces_meta)?;
                 }
-
                 for chr in margin_style.discontinuity_chars {
                     out.put_char(chr, &margin_style.meta)?;
                 }
-                out.put_char(' ', &self.main_style.spaces_meta)?;
+                if space_after {
+                    out.put_char(' ', &self.main_style.spaces_meta)?;
+                }
             }
 
             Ok(())
@@ -367,7 +368,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
 
         // Renders the slots of a line
         // example: ` ││ `
-        let put_slots_simple = |slots: &[Option<&M>], out: &mut O| {
+        let put_slots_simple = |slots: &[Option<&M>], out: &mut O, space_after: bool| {
             for slot in slots.iter().rev() {
                 if let Some(slot_style) = *slot {
                     out.put_char(self.main_style.vertical_char, slot_style)?;
@@ -375,7 +376,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
                     out.put_char(' ', &self.main_style.spaces_meta)?;
                 }
             }
-            if !slots.is_empty() {
+            if !slots.is_empty() && space_after {
                 out.put_char(' ', &self.main_style.spaces_meta)?;
             }
             Ok(())
@@ -469,22 +470,22 @@ impl<'a, M> PreProcAnnots<'a, M> {
                     for i in 0..max_fill_after_first {
                         let line_i = prev_line_i + 1 + i;
                         put_margin(Some(line_i), &mut out)?;
-                        put_slots_simple(&ml_slots, &mut out)?;
+                        put_slots_simple(&ml_slots, &mut out, true)?;
                         put_fill_line_text(line_i, &mut out)?;
                     }
-                    put_margin_discont(&mut out)?;
-                    put_slots_simple(&ml_slots, &mut out)?;
+                    put_margin_discont(&mut out, !ml_slots.is_empty())?;
+                    put_slots_simple(&ml_slots, &mut out, false)?;
                     out.put_char('\n', &self.main_style.spaces_meta)?;
                     for i in (0..max_fill_before_last).rev() {
                         let line_i = line_i - 1 - i;
                         put_margin(Some(line_i), &mut out)?;
-                        put_slots_simple(&ml_slots, &mut out)?;
+                        put_slots_simple(&ml_slots, &mut out, true)?;
                         put_fill_line_text(line_i, &mut out)?;
                     }
                 } else {
                     for line_i in (prev_line_i + 1)..line_i {
                         put_margin(Some(line_i), &mut out)?;
-                        put_slots_simple(&ml_slots, &mut out)?;
+                        put_slots_simple(&ml_slots, &mut out, true)?;
                         put_fill_line_text(line_i, &mut out)?;
                     }
                 }
@@ -517,7 +518,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
             // Handle single line annotations
             if !line_data.sl_annots.is_empty() {
                 put_margin(None, &mut out)?;
-                put_slots_simple(&ml_slots, &mut out)?;
+                put_slots_simple(&ml_slots, &mut out, true)?;
 
                 let sl_carets = self.gather_line_carets(line_data);
                 let mut i = 0;
@@ -563,14 +564,14 @@ impl<'a, M> PreProcAnnots<'a, M> {
 
             if !with_verticals.is_empty() {
                 put_margin(None, &mut out)?;
-                put_slots_simple(&ml_slots, &mut out)?;
+                put_slots_simple(&ml_slots, &mut out, true)?;
                 put_sl_verticals(with_verticals, &mut out)?;
                 out.put_char('\n', &self.main_style.spaces_meta)?;
             }
 
             for (i, &annot_i) in with_verticals.iter().enumerate().rev() {
                 put_margin(None, &mut out)?;
-                put_slots_simple(&ml_slots, &mut out)?;
+                put_slots_simple(&ml_slots, &mut out, true)?;
                 let col_cursor = put_sl_verticals(&with_verticals[..i], &mut out)?;
                 let start_col = self.annots[annot_i].span.start_col;
                 if col_cursor < start_col {
