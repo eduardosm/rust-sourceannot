@@ -142,13 +142,12 @@ struct PreProcAnnot<'a, M> {
 
 #[derive(Debug)]
 struct LineData {
-    // "sl" stands for single line
-    // "ml" stands for multi line
+    // Single line annotations on this line
     sl_annots: Vec<usize>,
+    // Multi line annotations that start on this line
     ml_annots_starts: Vec<usize>,
+    // Multi line annotations that end on this line
     ml_annots_ends: Vec<usize>,
-    sl_carets: Vec<usize>,
-    styles: Vec<(usize, bool)>,
 }
 
 impl<'a, M> PreProcAnnots<'a, M> {
@@ -180,7 +179,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
         let line_data = self
             .lines
             .entry(annot.span.start_line)
-            .or_insert_with(|| Self::create_line_data(self.snippet, annot.span.start_line));
+            .or_insert_with(|| Self::create_line_data());
         if annot.span.start_line == annot.span.end_line {
             // Single line
 
@@ -199,46 +198,9 @@ impl<'a, M> PreProcAnnots<'a, M> {
                 }
             }
 
-            // Apply caret styles
-            if line_data.sl_carets.len() <= annot.span.start_col {
-                line_data.sl_carets.resize(annot.span.start_col, usize::MAX);
-                line_data.sl_carets.resize(annot.span.end_col, annot_i);
-            } else if line_data.sl_carets.len() <= annot.span.end_col {
-                line_data.sl_carets[annot.span.start_col..]
-                    .iter_mut()
-                    .for_each(|sl_caret| {
-                        if *sl_caret == usize::MAX {
-                            *sl_caret = annot_i;
-                        }
-                    });
-                line_data.sl_carets.resize(annot.span.end_col, annot_i);
-            } else {
-                line_data.sl_carets[annot.span.start_col..annot.span.end_col]
-                    .iter_mut()
-                    .for_each(|sl_caret| {
-                        if *sl_caret == usize::MAX {
-                            *sl_caret = annot_i;
-                        }
-                    });
-            }
-
-            // Apply line text styles
-            for chr_style in
-                line_data.styles[annot.span.start_col_utf8..annot.span.end_col_utf8].iter_mut()
-            {
-                if chr_style.0 == usize::MAX {
-                    chr_style.0 = annot_i;
-                }
-            }
-
             Self::insert_annot_sorted(&self.annots, &annot, annot_i, &mut line_data.sl_annots);
         } else {
             // Multi line
-            for chr_style in line_data.styles[annot.span.start_col_utf8..].iter_mut() {
-                if chr_style.0 == usize::MAX {
-                    chr_style.0 = annot_i;
-                }
-            }
             Self::insert_annot_sorted(
                 &self.annots,
                 &annot,
@@ -249,13 +211,8 @@ impl<'a, M> PreProcAnnots<'a, M> {
             let end_line_data = self
                 .lines
                 .entry(annot.span.end_line)
-                .or_insert_with(|| Self::create_line_data(self.snippet, annot.span.end_line));
+                .or_insert_with(|| Self::create_line_data());
 
-            for chr_style in end_line_data.styles[..annot.span.end_col_utf8].iter_mut() {
-                if chr_style.0 == usize::MAX {
-                    chr_style.0 = annot_i;
-                }
-            }
             Self::insert_annot_sorted(
                 &self.annots,
                 &annot,
@@ -313,26 +270,11 @@ impl<'a, M> PreProcAnnots<'a, M> {
         dest.insert(insert_i, annot_i);
     }
 
-    fn create_line_data(snippet: &'a Snippet, line_i: usize) -> LineData {
-        let snippet_line = snippet.utf8_line_text(line_i);
-        let line_src_range = snippet.src_line_range(line_i);
-        let mut styles = vec![(usize::MAX, false); snippet_line.len()];
-        let mut utf8_i = 0;
-        for (utf8_len, alt) in snippet.utf8_lens_and_alts(line_src_range) {
-            if alt {
-                for style in styles[utf8_i..(utf8_i + utf8_len)].iter_mut() {
-                    style.1 = true;
-                }
-            }
-            utf8_i += utf8_len;
-        }
-        assert_eq!(utf8_i, snippet_line.len());
+    fn create_line_data() -> LineData {
         LineData {
             sl_annots: Vec::new(),
             ml_annots_starts: Vec::new(),
             ml_annots_ends: Vec::new(),
-            sl_carets: Vec::new(),
-            styles,
         }
     }
 
@@ -392,7 +334,8 @@ impl<'a, M> PreProcAnnots<'a, M> {
         };
 
         // Renders the text of a line
-        let put_line_text = |line_i: usize, styles: &[(usize, bool)], out: &mut O| {
+        let put_line_text = |line_i: usize, line_data: &LineData, out: &mut O| {
+            let styles = self.gather_line_styles(line_i, line_data);
             let line = self.snippet.utf8_line_text(line_i);
             assert_eq!(styles.len(), line.len());
             let mut chr_i = 0;
@@ -562,7 +505,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
 
             put_margin(Some(line_i), &mut out)?;
             put_slots_with_short_start(&ml_slots, &is_slot_start, &mut out)?;
-            put_line_text(line_i, &line_data.styles, &mut out)?;
+            put_line_text(line_i, line_data, &mut out)?;
 
             is_slot_start.fill(false);
 
@@ -576,13 +519,14 @@ impl<'a, M> PreProcAnnots<'a, M> {
                 put_margin(None, &mut out)?;
                 put_slots_simple(&ml_slots, &mut out)?;
 
+                let sl_carets = self.gather_line_carets(line_data);
                 let mut i = 0;
-                while i < line_data.sl_carets.len() {
-                    let annot_i = line_data.sl_carets[i];
-                    let len = line_data.sl_carets[i..]
+                while i < sl_carets.len() {
+                    let annot_i = sl_carets[i];
+                    let len = sl_carets[i..]
                         .iter()
                         .position(|&a| a != annot_i)
-                        .unwrap_or(line_data.sl_carets.len() - i);
+                        .unwrap_or(sl_carets.len() - i);
                     let chr = if annot_i == usize::MAX {
                         ' '
                     } else {
@@ -688,5 +632,79 @@ impl<'a, M> PreProcAnnots<'a, M> {
         }
 
         Ok(())
+    }
+
+    fn gather_line_styles(&self, line_i: usize, line_data: &LineData) -> Vec<(usize, bool)> {
+        let snippet_line = self.snippet.utf8_line_text(line_i);
+        let line_src_range = self.snippet.src_line_range(line_i);
+        let mut styles = vec![(usize::MAX, false); snippet_line.len()];
+        let mut utf8_i = 0;
+        for (utf8_len, alt) in self.snippet.utf8_lens_and_alts(line_src_range) {
+            if alt {
+                for style in styles[utf8_i..(utf8_i + utf8_len)].iter_mut() {
+                    style.1 = true;
+                }
+            }
+            utf8_i += utf8_len;
+        }
+        assert_eq!(utf8_i, snippet_line.len());
+
+        for &annot_i in line_data.sl_annots.iter() {
+            let annot = &self.annots[annot_i];
+            for chr_style in styles[annot.span.start_col_utf8..annot.span.end_col_utf8].iter_mut() {
+                if annot_i < chr_style.0 {
+                    chr_style.0 = annot_i;
+                }
+            }
+        }
+        for &annot_i in line_data.ml_annots_starts.iter() {
+            let annot = &self.annots[annot_i];
+            for chr_style in styles[annot.span.start_col_utf8..].iter_mut() {
+                if annot_i < chr_style.0 {
+                    chr_style.0 = annot_i;
+                }
+            }
+        }
+        for &annot_i in line_data.ml_annots_ends.iter() {
+            let annot = &self.annots[annot_i];
+            for chr_style in styles[..annot.span.end_col_utf8].iter_mut() {
+                if annot_i < chr_style.0 {
+                    chr_style.0 = annot_i;
+                }
+            }
+        }
+
+        styles
+    }
+
+    fn gather_line_carets(&self, line_data: &LineData) -> Vec<usize> {
+        let mut carets = Vec::new();
+
+        for &annot_i in line_data.sl_annots.iter() {
+            let annot = &self.annots[annot_i];
+            if carets.len() <= annot.span.start_col {
+                carets.resize(annot.span.start_col, usize::MAX);
+                carets.resize(annot.span.end_col, annot_i);
+            } else if carets.len() <= annot.span.end_col {
+                carets[annot.span.start_col..]
+                    .iter_mut()
+                    .for_each(|sl_caret| {
+                        if annot_i < *sl_caret {
+                            *sl_caret = annot_i;
+                        }
+                    });
+                carets.resize(annot.span.end_col, annot_i);
+            } else {
+                carets[annot.span.start_col..annot.span.end_col]
+                    .iter_mut()
+                    .for_each(|sl_caret| {
+                        if annot_i < *sl_caret {
+                            *sl_caret = annot_i;
+                        }
+                    });
+            }
+        }
+
+        carets
     }
 }
