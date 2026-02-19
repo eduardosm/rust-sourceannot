@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1 (unreleased)
+
+### Added
+
+- New `Snippet::src_pos_to_line_col()` function.
+
 ## 0.3.0 (2026-02-19)
 
 ### Breaking
