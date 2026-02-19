@@ -130,6 +130,26 @@ impl Snippet {
         }
     }
 
+    /// Converts a source position to a (line, column) pair.
+    ///
+    /// The line and column numbers are zero-based and column is
+    /// calculated based on the rendered text.
+    pub fn src_pos_to_line_col(&self, mut pos: usize) -> (usize, usize) {
+        while self.metas.get(pos).is_some_and(UnitMeta::is_extra) {
+            pos -= 1;
+        }
+
+        let line = self.src_pos_to_line(pos);
+        let (line_src_start, line_utf8_start) = if line == 0 {
+            (0, 0)
+        } else {
+            self.line_map[line - 1]
+        };
+        let (col_utf8, _) = self.gather_utf8_len(line_src_start..pos);
+        let col = string_width(&self.utf8_text[line_utf8_start..][..col_utf8]);
+        (line, col)
+    }
+
     pub(crate) fn src_line_range(&self, line_i: usize) -> core::ops::Range<usize> {
         let start = if line_i == 0 {
             0
@@ -551,6 +571,44 @@ mod tests {
         assert_eq!(snippet.src_pos_to_line(1), (0));
         assert_eq!(snippet.src_pos_to_line(2), (0));
         assert_eq!(snippet.src_pos_to_line(3), (0));
+    }
+
+    #[test]
+    fn test_src_pos_to_line_col() {
+        let mut builder = Snippet::builder(0);
+        builder.push_char('1', 1, false);
+        builder.push_char('\u{FF12}', 3, false);
+        builder.push_char('3', 1, false);
+        builder.next_line(1);
+        builder.push_char('4', 1, false);
+        builder.push_char('5', 1, false);
+        builder.push_char('6', 1, false);
+        let snippet = builder.finish();
+
+        assert_eq!(snippet.src_pos_to_line_col(0), (0, 0));
+        assert_eq!(snippet.src_pos_to_line_col(1), (0, 1));
+        assert_eq!(snippet.src_pos_to_line_col(2), (0, 1));
+        assert_eq!(snippet.src_pos_to_line_col(3), (0, 1));
+        assert_eq!(snippet.src_pos_to_line_col(4), (0, 3));
+        assert_eq!(snippet.src_pos_to_line_col(5), (0, 4));
+        assert_eq!(snippet.src_pos_to_line_col(6), (1, 0));
+        assert_eq!(snippet.src_pos_to_line_col(7), (1, 1));
+        assert_eq!(snippet.src_pos_to_line_col(8), (1, 2));
+        assert_eq!(snippet.src_pos_to_line_col(9), (1, 3));
+    }
+
+    #[test]
+    fn test_src_pos_to_line_col_large_meta() {
+        let mut builder = Snippet::builder(0);
+        builder.push_char('1', 1, false);
+        builder.push_str(&"\u{A7}".repeat(150), 1, false);
+        builder.push_char('2', 1, false);
+        let snippet = builder.finish();
+
+        assert_eq!(snippet.src_pos_to_line_col(0), (0, 0));
+        assert_eq!(snippet.src_pos_to_line_col(1), (0, 1));
+        assert_eq!(snippet.src_pos_to_line_col(2), (0, 151));
+        assert_eq!(snippet.src_pos_to_line_col(3), (0, 152));
     }
 
     #[test]
