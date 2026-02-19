@@ -330,10 +330,10 @@ pub enum InvalidSeqStyle {
 /// will cover the entire rendered `"abc"` fragment.
 ///
 /// Most `push_*` methods also accept an `alt` flag. When `alt` is `true`, the
-/// UTF-8 byte range appended to the current line is recorded as "alternate"
-/// text. This is intended for replacement/escaped representations (for example,
-/// `<XX>` escapes for control characters or invalid bytes) so it can be
-/// rendered differently (e.g., highlighted).
+/// appended fragment is recorded as "alternate" text. This is intended for
+/// replacement/escaped representations (for example, `<XX>` escapes for control
+/// characters or invalid bytes) so it can be rendered differently (e.g.,
+/// highlighted).
 ///
 /// # Example
 ///
