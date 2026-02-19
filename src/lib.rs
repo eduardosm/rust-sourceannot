@@ -299,9 +299,11 @@ pub use snippet::{
 ///     Emph,
 /// }
 ///
-/// struct Capture(pub Vec<(String, Style)>);
+/// // Note that `Annotations::render()` takes the `Output` implementor by value,
+/// // so we need to wrap the mutable reference.
+/// struct Capture<'a>(pub &'a mut Vec<(String, Style)>);
 ///
-/// impl sourceannot::Output<Style> for Capture {
+/// impl sourceannot::Output<Style> for Capture<'_> {
 ///     type Error = std::convert::Infallible;
 ///
 ///     fn put_str(&mut self, text: &str, meta: &Style) -> Result<(), Self::Error> {
