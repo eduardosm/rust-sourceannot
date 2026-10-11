@@ -1136,6 +1136,106 @@ fn test_render_textless_unit() {
 }
 
 #[test]
+fn test_render_zero_width_unit() {
+    // "1234\n56\u{200B}78", where U+200B has text, but its width is zero
+    let mut builder = Snippet::builder(1);
+    for c in "1234".chars() {
+        builder.push_char(c, 1, false);
+    }
+    builder.next_line(1);
+    builder.push_char('5', 1, false);
+    builder.push_char('6', 1, false);
+    builder.push_char('\u{200B}', 1, false);
+    builder.push_char('7', 1, false);
+    builder.push_char('8', 1, false);
+    let snippet = builder.finish();
+
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..3, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(7..8, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    test_render(
+        &annots,
+        0,
+        0,
+        indoc::indoc! {"
+            1 │ 1234
+              │  ^^ test 1
+            2 │ 56\u{200B}78
+              │   - test 2
+        "},
+        indoc::indoc! {"
+            msmstaats
+            ssmsslls111111s
+            msmsttbtts
+            ssmsssLs222222s
+        "},
+    );
+
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..3, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(6..8, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    test_render(
+        &annots,
+        0,
+        0,
+        indoc::indoc! {"
+            1 │ 1234
+              │  ^^ test 1
+            2 │ 56\u{200B}78
+              │  - test 2
+        "},
+        indoc::indoc! {"
+            msmstaats
+            ssmsslls111111s
+            msmstbbtts
+            ssmssLs222222s
+        "},
+    );
+
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..3, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(6..9, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    test_render(
+        &annots,
+        0,
+        0,
+        indoc::indoc! {"
+            1 │ 1234
+              │  ^^ test 1
+            2 │ 56\u{200B}78
+              │  -- test 2
+        "},
+        indoc::indoc! {"
+            msmstaats
+            ssmsslls111111s
+            msmstbbbts
+            ssmssLLs222222s
+        "},
+    );
+
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..3, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(7..9, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    test_render(
+        &annots,
+        0,
+        0,
+        indoc::indoc! {"
+            1 │ 1234
+              │  ^^ test 1
+            2 │ 56\u{200B}78
+              │   - test 2
+        "},
+        indoc::indoc! {"
+            msmstaats
+            ssmsslls111111s
+            msmsttbbts
+            ssmsssLs222222s
+        "},
+    );
+}
+
+#[test]
 fn test_render_line_break_1() {
     // "1234\n5678\n90ab\ncdef\n"
     let lines = ["1234", "5678", "90ab", "cdef"];
