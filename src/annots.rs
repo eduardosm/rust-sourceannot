@@ -447,7 +447,7 @@ impl<'a, M> PreProcAnnots<'a, M> {
                 if start_col < col_cursor {
                     continue;
                 }
-                if start_col - col_cursor >= 1 {
+                for _ in 0..(start_col - col_cursor) {
                     out.put_char(' ', &self.main_style.spaces_meta)?;
                 }
                 out.put_char(
