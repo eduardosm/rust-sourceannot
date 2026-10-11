@@ -295,6 +295,14 @@ impl Snippet {
                 // add one caret to account for it.
                 end_col += 1;
             }
+
+            if end_line == start_line {
+                // The check above only detects elements without text. A
+                // non-empty span can still have zero width if all its text
+                // has zero width (for example, a ZERO WIDTH SPACE or a lone
+                // combining mark), so make sure at least one caret is drawn.
+                end_col = end_col.max(start_col + 1);
+            }
         }
 
         SourceSpan {
@@ -818,6 +826,73 @@ mod tests {
                 end_line: 0,
                 end_col: 153,
                 end_col_utf8: 302,
+            },
+        );
+    }
+
+    #[test]
+    fn test_convert_span_zero_width_text() {
+        // U+200B and U+0301 have text, but their width is zero
+        let mut builder = Snippet::builder(0);
+        builder.push_char('1', 1, false);
+        builder.push_char('\u{200B}', 3, false);
+        builder.push_char('\u{0301}', 2, false);
+        builder.push_char('2', 1, false);
+        let snippet = builder.finish();
+
+        assert_eq!(
+            snippet.convert_span(1, 4),
+            SourceSpan {
+                start_line: 0,
+                start_col: 1,
+                start_col_utf8: 1,
+                end_line: 0,
+                end_col: 2,
+                end_col_utf8: 4,
+            },
+        );
+        assert_eq!(
+            snippet.convert_span(4, 6),
+            SourceSpan {
+                start_line: 0,
+                start_col: 1,
+                start_col_utf8: 4,
+                end_line: 0,
+                end_col: 2,
+                end_col_utf8: 6,
+            },
+        );
+        assert_eq!(
+            snippet.convert_span(1, 6),
+            SourceSpan {
+                start_line: 0,
+                start_col: 1,
+                start_col_utf8: 1,
+                end_line: 0,
+                end_col: 2,
+                end_col_utf8: 6,
+            },
+        );
+        assert_eq!(
+            snippet.convert_span(0, 4),
+            SourceSpan {
+                start_line: 0,
+                start_col: 0,
+                start_col_utf8: 0,
+                end_line: 0,
+                end_col: 1,
+                end_col_utf8: 4,
+            },
+        );
+        assert_eq!(
+            snippet.convert_span(4, 7),
+            SourceSpan {
+                start_line: 0,
+                start_col: 1,
+                start_col_utf8: 4,
+                end_line: 0,
+                end_col: 2,
+                end_col_utf8: 7,
             },
         );
     }

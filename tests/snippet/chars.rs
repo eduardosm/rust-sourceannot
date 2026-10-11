@@ -158,3 +158,14 @@ fn test_wide_char() {
     test_render_simple(&snippet, 5..6, "4\u{FF12}6", " ^^ ", "ttt");
     test_render_simple(&snippet, 6..7, "4\u{FF12}6", "   ^", "ttt");
 }
+
+#[test]
+fn test_zero_width_char() {
+    let source = "123\n4\u{200B}6";
+    let snippet =
+        sourceannot::Snippet::with_chars(0, source.chars(), 4, ControlCharStyle::Replacement, true);
+
+    test_render_simple(&snippet, 4..5, "4\u{200B}6", "^ ", "ttt");
+    test_render_simple(&snippet, 5..6, "4\u{200B}6", " ^", "ttt");
+    test_render_simple(&snippet, 6..7, "4\u{200B}6", " ^", "ttt");
+}

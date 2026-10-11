@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.2 (unreleased)
+
+### Fixed
+
+- Fixed panicking when rendering a single-line span whose text has zero width
+  (for example, a span that only covers a ZERO WIDTH SPACE).
+
 ## 0.3.1 (2026-02-19)
 
 ### Added
