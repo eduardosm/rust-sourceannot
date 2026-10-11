@@ -207,6 +207,87 @@ fn test_render_single_line() {
 }
 
 #[test]
+fn test_render_single_line_verticals() {
+    // "123456789"
+    let mut builder = Snippet::builder(1);
+    for c in "123456789".chars() {
+        builder.push_char(c, 1, false);
+    }
+    let snippet = builder.finish();
+
+    // vertical more than one column away from the start of the line
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(2..4, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(6..8, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    test_render(
+        &annots,
+        0,
+        0,
+        indoc::indoc! {"
+            1 │ 123456789
+              │   ^^  -- test 2
+              │   │
+              │   test 1
+        "},
+        indoc::indoc! {"
+            msmsttaattbbts
+            ssmsssllssLLs222222s
+            ssmsssls
+            ssmsss111111s
+        "},
+    );
+
+    // verticals more than one column away from each other
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(1..2, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(4..6, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    annots.add_annotation(8..9, &ANNOT_STYLE_1, vec![("test 3".into(), '3')]);
+    test_render(
+        &annots,
+        0,
+        0,
+        indoc::indoc! {"
+            1 │ 123456789
+              │  ^  --  ^ test 3
+              │  │  │
+              │  │  test 2
+              │  test 1
+        "},
+        indoc::indoc! {"
+            msmstattbbttas
+            ssmsslssLLssls333333s
+            ssmsslssLs
+            ssmsslss222222s
+            ssmss111111s
+        "},
+    );
+
+    // label right after a vertical
+    let mut annots = Annotations::new(&snippet, &MAIN_STYLE);
+    annots.add_annotation(3..4, &ANNOT_STYLE_1, vec![("test 1".into(), '1')]);
+    annots.add_annotation(3..4, &ANNOT_STYLE_2, vec![("test 2".into(), '2')]);
+    test_render(
+        &annots,
+        0,
+        0,
+        indoc::indoc! {"
+            1 │ 123456789
+              │    ^
+              │    │
+              │    │test 2
+              │    test 1
+        "},
+        indoc::indoc! {"
+            msmstttattttts
+            ssmssssls
+            ssmssssls
+            ssmssssl222222s
+            ssmssss111111s
+        "},
+    );
+}
+
+#[test]
 fn test_render_multi_line() {
     // "1234\n5678\n90ab\ncdef\n"
     let lines = ["1234", "5678", "90ab", "cdef"];

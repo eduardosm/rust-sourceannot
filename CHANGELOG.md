@@ -6,6 +6,8 @@
 
 - Fixed panicking when rendering a single-line span whose text has zero width
   (for example, a span that only covers a ZERO WIDTH SPACE).
+- Fixed misaligned vertical connectors between single-line annotations and
+  their labels.
 
 ## 0.3.1 (2026-02-19)
 
